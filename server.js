@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 5000;
 // ✅ CORS configuration (important for Vercel frontend)
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "*", // use Vercel domain later
+    origin: [
+      "http://localhost:5174",
+      "https://medha-mantana-frontend.vercel.app",
+      "https://medha-mantana.vercel.app"
+    ], // use Vercel domain later
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
