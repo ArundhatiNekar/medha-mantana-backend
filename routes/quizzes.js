@@ -216,9 +216,9 @@ router.get("/:id", async (req, res) => {
     const orderedQuestions = quiz.questionIds
       .map((id) => qById.get(String(id)))
       .filter(Boolean);
-    const randomizedQuestions = [...orderedQuestions].sort(() => Math.random() - 0.5);
+    const randomizedQuestions = [...orderedQuestions].sort(() => 0.5 - Math.random());
 
-    // ✅ Capitalize categories
+    // ✅ Capitalize categorieshttps://chatgpt.com/c/68f79849-cb68-8322-b921-9a3a1696fc35
     const displayCategories = categories.map(
       (c) => c.charAt(0).toUpperCase() + c.slice(1)
     );
