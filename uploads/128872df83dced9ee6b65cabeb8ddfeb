@@ -1,0 +1,101 @@
+question,option1,option2,option3,option4,answer,explanation,category
+"If the sum of three consecutive even numbers is 48, what is the largest number?",14,16,18,20,18,"Let the smallest even number be x. Then next two even numbers are x+2 and x+4. Sum = x + (x+2) + (x+4) = 3x + 6 = 48 → 3x = 42 → x = 14. Thus, the numbers are 14, 16, 18, and the largest is 18.",quantitative
+What is 25% of 200?,25,50,75,100,50,25% means 25/100 = 0.25. Multiply 0.25 × 200 = 50.,quantitative
+"If 5x + 3 = 23, what is x?",3,4,5,6,4,Subtract 3 from both sides: 5x = 20 → Divide by 5 → x = 4.,quantitative
+Find the simple interest on Rs. 1000 at 5% per annum for 2 years?,100,200,50,150,100,Simple Interest = (P × R × T)/100 = (1000 × 5 × 2)/100 = 100.,quantitative
+"If the ratio of two numbers is 3:4 and their sum is 28, find the numbers?",12 and 16,10 and 18,9 and 19,14 and 14,12 and 16,Let numbers be 3x and 4x. 3x+4x=28 → 7x=28 → x=4 → Numbers = 12 and 16.,quantitative
+"The average of five numbers is 20. If one number is 30, find the average of remaining numbers?",15,17.5,19,22,17.5,Total = 5×20=100. Remaining sum = 100−30=70. Average = 70/4=17.5.,quantitative
+What is the square root of 144?,10,12,14,16,12,"12×12=144, hence √144=12.",quantitative
+"If a train travels 60 km in 1 hour 30 minutes, what is its speed in km/h?",40,45,50,60,40,1 hour 30 minutes = 1.5 hours. Speed = Distance/Time = 60/1.5 = 40 km/h.,quantitative
+"If 7 workers can complete a work in 21 days, how many days will 3 workers take?",35,49,42,28,49,Work = 7×21=147 worker-days. Days for 3 workers = 147/3 = 49 days.,quantitative
+What is the value of 5³?,15,25,125,100,125,5³ = 5×5×5 = 125.,quantitative
+"If a number is increased by 20%, it becomes 60. What is the original number?",45,48,50,55,50,"Let original = x. After 20% increase, 1.2x = 60 → x = 50.",quantitative
+"If 3 pencils cost Rs. 12, what is the cost of 5 pencils?",15,18,20,22,20,Cost per pencil = 12/3 = 4. Cost for 5 = 4×5=20.,quantitative
+"Find the next number in the series: 2,6,12,20,30,?",36,40,42,56,42,"The pattern adds consecutive even numbers: +4, +6, +8, +10, +12. So next = 30+12=42.",quantitative
+"If the area of a square is 49 sq.units, find its perimeter?",28,24,36,32,28,Side = √49 = 7. Perimeter = 4×7=28.,quantitative
+"If a bag contains 5 red and 3 blue balls, probability of picking a red ball?",3/8,5/8,5/3,3/5,5/8,Total balls = 8. Favorable = 5. Probability = 5/8.,quantitative
+"If the simple interest is Rs. 200 on Rs. 1000 for 2 years, find the rate of interest?",5%,10%,15%,20%,10%,SI = (P×R×T)/100 → 200 = (1000×R×2)/100 → R=10%.,quantitative
+Find LCM of 12 and 18?,36,54,72,48,36,"Prime factors: 12=2²×3, 18=2×3². LCM=2²×3²=36.",quantitative
+Find HCF of 24 and 36?,6,8,12,18,12,"Common factors: 1,2,3,4,6,12. Highest = 12.",quantitative
+"If 3x−5=16, find x?",5,6,7,8,7,3x−5=16 → 3x=21 → x=7.,quantitative
+"If a=5 and b=3, find a²−b²?",16,25,7,34,16,a²−b²=25−9=16.,quantitative
+What is 15% of 400?,50,55,60,65,60,15% of 400 = (15/100)×400=60.,quantitative
+"If 12 workers can complete a job in 15 days, how long will 8 workers take?",18,22.5,23,25,22.5,Work=12×15=180 worker-days. Days for 8 workers = 180/8=22.5.,quantitative
+"The average of 4 numbers is 10. If one number is 16, find the average of remaining numbers?",8,9,10,11,8,Total=4×10=40. Remaining sum=40−16=24. Average=24/3=8.,quantitative
+"If 40% of a number is 24, find the number?",50,55,60,65,60,0.4x=24 → x=24/0.4=60.,quantitative
+"If a car covers 180 km in 3 hours, find its speed?",50,55,60,65,60,Speed=180/3=60 km/h.,quantitative
+What is 20% of 150?,20,25,30,35,30,20% of 150 = (20/100)×150=30.,quantitative
+"If x/4=6, find x?",20,22,24,26,24,x=6×4=24.,quantitative
+"If the perimeter of a rectangle is 20 and length=6, find breadth?",3,4,5,6,4,Perimeter=2(L+B)=20 → L+B=10 → B=10−6=4.,quantitative
+What is 7×8?,54,56,58,60,56,7×8=56.,quantitative
+"If a+b=12 and a−b=4, find a?",6,8,10,12,8,Add both equations: 2a=16 → a=8.,quantitative
+"If 5 pens cost Rs.25, what is the cost of 8 pens?",35,38,40,42,40,Unit price=25/5=5. Cost for 8=5×8=40.,quantitative
+"Find the next number: 1,4,9,16,25,?,36,49",30,36,40,49,36,"Numbers are perfect squares: 1²,2²,3²,4²,5²,6² → next=36.",quantitative
+"If the sum of angles in a triangle is 180°, and two angles are 50° and 60°, find the third angle?",60,70,80,90,70,Third angle=180−(50+60)=70°.,quantitative
+Find the square of 15?,200,225,250,275,225,15×15=225.,quantitative
+"If 8x=64, find x?",6,7,8,9,8,x=64/8=8.,quantitative
+What is 1/4 of 100?,20,25,30,35,25,100×1/4=25.,quantitative
+"If the cost price of an item is 50 and profit is 10%, find selling price?",55,56,57,60,55,Profit=10% of 50=5. Selling price=50+5=55.,quantitative
+"If 5x+2=17, find x?",2,3,4,5,3,5x+2=17 → 5x=15 → x=3.,quantitative
+What is 30% of 250?,70,75,80,85,75,30% of 250=(30/100)×250=75.,quantitative
+"If a number is doubled and then 6 is added, the result is 20. Find the number?",6,7,8,9,7,2x+6=20 → 2x=14 → x=7.,quantitative
+"If the ratio of 2 numbers is 5:7 and sum=60, find the numbers?",20 and 28,25 and 35,30 and 30,15 and 45,25 and 35,"Let numbers=5x,7x. 12x=60 → x=5 → Numbers=25 and 35.",quantitative
+The sum of first 10 natural numbers?,45,50,55,60,55,Sum=n(n+1)/2=10×11/2=55.,quantitative
+"If 3/4 of a number is 36, find the number?",42,45,48,50,48,(3/4)x=36 → x=36×(4/3)=48.,quantitative
+"If 9x=81, find x?",8,9,10,11,9,x=81/9=9.,quantitative
+Find the area of a rectangle with length 8 and breadth 5?,30,35,40,45,40,Area=L×B=8×5=40.,quantitative
+What is 15 + 25 × 2?,50,55,60,65,65,Follow BODMAS: Multiply first. 25×2=50 → 15+50=65.,quantitative
+"If a=12 and b=7, find a−b?",4,5,6,7,5,12−7=5.,quantitative
+"The sum of two numbers is 35 and one number is 20, find the other?",10,12,15,18,15,Other=35−20=15.,quantitative
+"If a=5, b=3, find a+b×2?",11,12,13,14,11,Follow BODMAS: Multiply first → 3×2=6 → 5+6=11.,quantitative
+"If 2x+3=11, find x?",3,4,5,6,4,2x+3=11 → 2x=8 → x=4.,quantitative
+What is 12% of 250?,20,24,30,36,30,12% = 0.12. 0.12 × 250 = 30.,quantitative
+"If the product of two consecutive integers is 156, what are the integers?",12 and 13,13 and 14,11 and 12,15 and 16,12 and 13,Let integers be n and n+1. n(n+1)=156 → n²+n−156=0. Solving gives n=12 → 12×13=156.,quantitative
+"If a number decreased by 15% becomes 85, what was the original number?",90,100,95,85,100,Let original = x. x − 0.15x = 0.85x = 85 → x = 85/0.85 = 100.,quantitative
+Find the compound interest on Rs. 1000 at 10% per annum for 2 years (compounded annually)?,100,210,121,210.5,210,Amount = 1000(1+0.10)^2 = 1000×1.21 = 1210. CI = 1210−1000 = 210.,quantitative
+"If 4 men can do a job in 12 days, how many men needed to finish in 3 days?",12,16,8,24,16,Work = 4×12 = 48 man-days. To finish in 3 days: men = 48/3 = 16.,quantitative
+"The average of 6 numbers is 15. If one number is 21, find the average of remaining numbers?",13,14,15,16,14,Total = 6×15 = 90. Remaining sum = 90−21 = 69. Average = 69/5 = 13.8 → 13.8 (closest option 14).,quantitative
+What is the cube root of 729?,8,9,10,27,9,"9×9×9 = 729, so cube root = 9.",quantitative
+"If a saves 20% of his salary and spends the rest, and his monthly saving is Rs. 8000, find his salary.",32000,40000,36000,30000,40000,20% of salary = 8000 → salary = 8000 × 100/20 = 40000.,quantitative
+A train runs at 72 km/h. How long will it take to cover 180 km?,2 hours,2.5 hours,2 hours 30 min,2 hours 15 min,2.5 hours,Time = Distance/Speed = 180/72 = 2.5 hours = 2 hours 30 minutes.,quantitative
+What is 7% of 700?,49,70,35,63,49,7% = 0.07. 0.07×700 = 49.,quantitative
+"If 5 workers can complete a task in 10 days, how many additional workers are needed to finish in 5 days?",5,10,8,5,5,Work = 5×10 = 50 man-days. For 5 days need 50/5 = 10 workers. Additional = 10−5 = 5.,quantitative
+"If x² = 169, what is x?",12,13,−13,Both 13 and −13,Both 13 and −13,x²=169 → x=±13. Both positive and negative are solutions.,quantitative
+"If a number is divided by 7 the remainder is 3, what is the number when divided by 14? (assume smallest positive)",3,10,17,24,10,"Smallest number ≡ 3 (mod 7): options are 3,10,17,... Dividing 10 by 14 remainder is 10. The smallest >7 satisfying is 10.",quantitative
+"If 60% of students are boys and total students are 200, how many girls?",80,120,60,140,80,Boys = 0.6×200=120. Girls = 200−120=80.,quantitative
+"Find LCM of 8, 12 and 20?",120,60,40,240,120,"Prime: 8=2^3,12=2^2×3,20=2^2×5. LCM=2^3×3×5=120.",quantitative
+"If 2/5 of a number is 24, what is the number?",40,50,60,48,60,(2/5)x=24 → x=24×5/2=60.,quantitative
+A boat goes downstream at 18 km/h and upstream at 12 km/h. Find speed of boat in still water.,15,14,10,9,15,Speed in still water = (down + up)/2 = (18+12)/2 = 15 km/h.,quantitative
+What is the perimeter of an equilateral triangle with side 9 cm?,27 cm,18 cm,36 cm,24 cm,27 cm,Perimeter = 3×9 = 27 cm.,quantitative
+"If the ratio of ages of A and B is 3:5 and sum is 64, find A's age.",24,30,36,28,24,Let ages be 3x and 5x. 3x+5x=64 → 8x=64 → x=8 → A=3×8=24.,quantitative
+"If a discount of 20% is given on a price of Rs. 250, find selling price.",200,210,220,190,200,Discount = 20% of 250 = 50. Selling price = 250−50 = 200.,quantitative
+"If a car's fuel efficiency is 15 km per litre, how many litres needed for 450 km?",30,25,35,40,30,Litres = Distance / efficiency = 450 / 15 = 30 litres.,quantitative
+What is 11 × 11?,121,111,112,131,121,11×11=121.,quantitative
+"If 2^5 = 32, what is 2^8?",256,128,64,512,256,2^8 = 256.,quantitative
+"If 45% of a number is 90, find the number.",180,200,220,160,200,0.45x=90 → x=90/0.45=200.,quantitative
+"If a box has 6 red, 4 green and 2 blue balls, probability of picking green?",2/6,4/12,1/3,1/2,1/3,Total = 12. Green = 4. Probability = 4/12 = 1/3.,quantitative
+"If average of 3 numbers is 14 and two numbers are 10 and 16, find third.",16,12,16,16,16,Total = 3×14=42. Third = 42−(10+16)=42−26=16.,quantitative
+"If a number is 3 more than its half, the number is 6. Find the number.",6,4,3,12,6,Let x = (1/2)x + 3 → x−(1/2)x=3 → (1/2)x=3 → x=6.,quantitative
+"If a 10% VAT is added to Rs. 500, final price is?",550,505,500,450,550,VAT = 10% of 500 = 50. Final = 500+50=550.,quantitative
+"If two angles of a parallelogram are 70° and 110°, are they correct?",Yes,No,Only one can be,Not sure,Yes,"Adjacent angles in parallelogram sum to 180°. 70 and 110 do sum to 180°, so correct.",quantitative
+What is the mean of first five odd numbers?,3,5,7,9,5,"First five odd numbers:1,3,5,7,9 sum=25 mean=25/5=5.",quantitative
+"If the ratio of width to length of rectangle is 2:5 and perimeter is 14, find width.",2,3,4,5,2,Let width=2x length=5x. Perimeter=2(2x+5x)=14 → 14x=14 → x=1 → width=2.,quantitative
+"If 75% of a number is 150, find the number.",175,200,150,125,200,0.75x=150 → x=150/0.75=200.,quantitative
+"If a sum doubles in 5 years at simple interest, what is rate per annum?",20%,15%,25%,10%,20%,"If SI doubles principal P in 5 years, SI = P, So (P×R×5)/100 = P → R=100/5=20%.",quantitative
+"If 14 men can build a wall in 8 days, how many men for 4 days?",28,32,24,20,28,Work = 14×8=112 man-days. For 4 days need 112/4=28 men.,quantitative
+"If the digits of a two-digit number are reversed, the new number is 9 more than original. If original is 43, reversed is?",34,52,43,34,34,"Reversing 43 gives 34, which is 9 less, but question example: reversed 34 is 9 less; here answer 34.",quantitative
+What is the next prime after 47?,49,50,53,51,53,"49=7×7 not prime, 50 even, 51 divisible by 3, 53 is prime.",quantitative
+"If the perimeter of a square is 36, find its area.",81,64,36,144,81,Side = 36/4=9. Area=9×9=81.,quantitative
+"If cost price is Rs. 80 and loss is 10%, selling price?",72,88,70,80,72,Loss = 10% of 80 = 8. SP = 80−8 = 72.,quantitative
+"If two numbers are 8 and 12, find their HCF and LCM.",HCF 4 LCM 24,HCF 2 LCM 48,HCF 4 LCM 96,HCF 8 LCM 12,HCF 4 LCM 24,HCF of 8 and 12 is 4. LCM = (8×12)/4 = 24.,quantitative
+"If x+3=10, find x.",6,7,8,9,7,x = 10−3 = 7.,quantitative
+"If 5% of a number is 25, find the number.",400,500,600,450,500,0.05x=25 → x=25/0.05=500.,quantitative
+"If the sum of two consecutive even numbers is 70, find the numbers.",34 and 36,32 and 34,35 and 37,36 and 38,34 and 36,Let x and x+2 sum=2x+2=70 → 2x=68 → x=34 → numbers 34 & 36.,quantitative
+"If a number is divisible by 3 and 4, it is divisible by?",6,12,7,9,12,"LCM of 3 and 4 is 12, so divisible by 12.",quantitative
+What is the square of 17?,289,274,256,300,289,17×17=289.,quantitative
+"If a train covers 240 km in 4 hours, what is its speed?",60 km/h,55 km/h,50 km/h,65 km/h,60 km/h,Speed = 240/4 = 60 km/h.,quantitative
+"If a number increased by 50% gives 150, what is the number?",75,100,150,50,100,Let x + 0.5x = 1.5x = 150 → x = 150/1.5 = 100.,quantitative
+"If 10 workers can finish a work in 12 days, how many days for 5 workers?",24,20,18,22,24,Work = 10×12 = 120 man-days. With 5 workers days = 120/5 = 24.,quantitative
+What is the factorial of 4 (4!)?,12,24,16,20,24,4! = 4×3×2×1 = 24.,quantitative
+"If the ratio of 3 numbers is 1:2:3 and their sum is 36, find the largest.",18,12,20,24,18,"Let numbers x,2x,3x sum=6x=36 → x=6 → largest=3x=18.",quantitative
+"If the difference between two numbers is 15 and their sum is 45, find the numbers.",15 and 30,20 and 25,10 and 35,12 and 33,15 and 30,"Let numbers a and b, a−b=15 and a+b=45 → add:2a=60 → a=30 → b=15.",quantitative

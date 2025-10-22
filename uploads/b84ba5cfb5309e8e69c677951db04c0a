@@ -1,0 +1,10 @@
+question,option1,option2,option3,option4,answer,category,explanation
+What is 2+2?,2,3,4,5,4,quantitative,Because 2+2 = 4
+Which planet is known as the Red Planet?,Earth,Mars,Jupiter,Saturn,Mars,logical,Mars looks red due to iron oxide on its surface
+What is the synonym of 'Happy'?,Sad,Joyful,Angry,Slow,Joyful,verbal,"'Joyful' means the same as 'Happy'"
+Find the next number in the sequence: 2, 4, 6, ?,8,10,numerical,The pattern increases by 2
+A cube has how many faces?,4,6,8,12,6,spatial,A cube has 6 equal square faces
+Which simple machine is a wheel with a rope?,Lever,Pulley,Inclined Plane,Screw,Pulley,mechanical,A pulley uses a rope and wheel to lift objects
+Which device is used to measure voltage?,Ammeter,Voltmeter,Ohmmeter,Thermometer,Voltmeter,technical,Voltmeter measures voltage
+If all cats are animals and some animals are dogs, then cats are __?,Dogs,Not Dogs,Animals,Birds,Animals,reasoning,Cats are always animals
+The national bird of India is?,Sparrow,Peacock,Eagle,Crow,Peacock,general,The peacock is the national bird of India
