@@ -11,7 +11,7 @@ import resultsRoute from "./routes/results.js";
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000; // ✅ Added
 
 // ✅ CORS configuration (important for Vercel frontend)
 app.use(
@@ -20,8 +20,9 @@ app.use(
       "http://localhost:5174",
       "https://medha-mantana-frontend.vercel.app",
       "https://medha-mantana.vercel.app"
-    ], // use Vercel domain later
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Added
     credentials: true,
   })
 );
