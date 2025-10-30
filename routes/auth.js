@@ -128,7 +128,6 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: "Server error during login" });
   }
 });
-
 /* -------------------------------------------------------------------------- */
 /*                       👩‍🏫 ADMIN LOGIN (Manual only)                        */
 /* -------------------------------------------------------------------------- */
@@ -171,6 +170,7 @@ router.post("/admin-login", async (req, res) => {
     res.status(500).json({ error: "Server error during admin login" });
   }
 });
+
 
 /* -------------------------------------------------------------------------- */
 /*                         🔵 GOOGLE REGISTER                                 */
