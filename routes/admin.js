@@ -1,5 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Quiz from "../models/Quiz.js";
 import Result from "../models/Result.js";
@@ -36,6 +37,68 @@ router.get("/users", authMiddleware, adminOnly, async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
+/*                              ➕ Add a New User                              */
+/* -------------------------------------------------------------------------- */
+router.post("/users", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { username, email, password, role } = req.body;
+
+    if (!username || !email || !password || !role) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: "User with this email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      role,
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: "✅ User added successfully", user: newUser });
+  } catch (err) {
+    console.error("❌ Error adding user:", err);
+    res.status(500).json({ error: "Server error adding user" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              ✏️ Update a User                              */
+/* -------------------------------------------------------------------------- */
+router.put("/users/:id", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { username, email, role } = req.body;
+    const userId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email, role },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "✅ User updated successfully", user: updatedUser });
+  } catch (err) {
+    console.error("❌ Error updating user:", err);
+    res.status(500).json({ error: "Server error updating user" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
 /*                              ❌ Delete a User                              */
 /* -------------------------------------------------------------------------- */
 router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
@@ -43,17 +106,14 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
     const userId = req.params.id;
     console.log("🗑️ Deleting user with ID:", userId);
 
-    // ✅ Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid user ID format" });
     }
 
-    // ✅ Prevent admin from deleting themselves
     if (req.user && req.user._id.toString() === userId) {
       return res.status(400).json({ error: "You cannot delete your own admin account." });
     }
 
-    // ✅ Delete user
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
       console.log("⚠️ User not found in DB.");
