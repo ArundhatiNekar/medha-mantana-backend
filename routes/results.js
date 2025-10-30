@@ -141,4 +141,15 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+/* ---------------- DELETE RESULT ---------------- */
+router.delete("/:id", async (req, res) => {
+  try {
+    const deleted = await Result.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "❌ Result not found" });
+    res.json({ message: "✅ Result deleted" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;

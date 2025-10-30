@@ -8,6 +8,7 @@ import questionsRoute from "./routes/questions.js";
 import authRoute from "./routes/auth.js";
 import quizRoute from "./routes/quizzes.js";
 import resultsRoute from "./routes/results.js";
+import adminRoute from "./routes/admin.js";
 
 dotenv.config();
 const app = express();
@@ -41,6 +42,7 @@ app.use("/api/questions", questionsRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/quizzes", quizRoute);
 app.use("/api/results", resultsRoute);
+app.use("/api/admin", adminRoute);
 
 // ✅ MongoDB Connection
 mongoose
