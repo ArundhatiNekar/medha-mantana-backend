@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import Quiz from "../models/Quiz.js";
 import Result from "../models/Result.js";
@@ -42,12 +43,25 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
     const userId = req.params.id;
     console.log("🗑️ Deleting user with ID:", userId);
 
+    // ✅ Validate ObjectId format before deleting
+if (!mongoose.Types.ObjectId.isValid(userId)) {
+  return res.status(400).json({ error: "Invalid user ID format" });
+}
+
     // Prevent admin from deleting their own account accidentally
     if (req.user._id.toString() === userId) {
       return res.status(400).json({ error: "You cannot delete your own admin account." });
     }
 
-    const user = await User.findByIdAndDelete(userId);
+    const resultId = req.params.id;
+
+// ✅ Validate ObjectId format before deleting
+if (!mongoose.Types.ObjectId.isValid(resultId)) {
+  return res.status(400).json({ error: "Invalid result ID format" });
+}
+
+const result = await Result.findByIdAndDelete(resultId);
+
 
     if (!user) {
       console.log("⚠️ User not found in DB.");
@@ -123,7 +137,15 @@ router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 router.delete("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
-    const quiz = await Quiz.findByIdAndDelete(req.params.id);
+    const quizId = req.params.id;
+
+// ✅ Validate ObjectId format before deleting
+if (!mongoose.Types.ObjectId.isValid(quizId)) {
+  return res.status(400).json({ error: "Invalid quiz ID format" });
+}
+
+const quiz = await Quiz.findByIdAndDelete(quizId);
+
     if (!quiz) {
       return res.status(404).json({ error: "Quiz not found" });
     }
