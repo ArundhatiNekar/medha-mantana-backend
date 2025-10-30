@@ -43,26 +43,18 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
     const userId = req.params.id;
     console.log("🗑️ Deleting user with ID:", userId);
 
-    // ✅ Validate ObjectId format before deleting
-if (!mongoose.Types.ObjectId.isValid(userId)) {
-  return res.status(400).json({ error: "Invalid user ID format" });
-}
+    // ✅ Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
 
-    // Prevent admin from deleting their own account accidentally
-    if (req.user._id.toString() === userId) {
+    // ✅ Prevent admin from deleting themselves
+    if (req.user && req.user._id.toString() === userId) {
       return res.status(400).json({ error: "You cannot delete your own admin account." });
     }
 
-    const resultId = req.params.id;
-
-// ✅ Validate ObjectId format before deleting
-if (!mongoose.Types.ObjectId.isValid(resultId)) {
-  return res.status(400).json({ error: "Invalid result ID format" });
-}
-
-const result = await Result.findByIdAndDelete(resultId);
-
-
+    // ✅ Delete user
+    const user = await User.findByIdAndDelete(userId);
     if (!user) {
       console.log("⚠️ User not found in DB.");
       return res.status(404).json({ error: "User not found" });
@@ -101,10 +93,17 @@ router.get("/results", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 router.delete("/results/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
-    const result = await Result.findByIdAndDelete(req.params.id);
+    const resultId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(resultId)) {
+      return res.status(400).json({ error: "Invalid result ID format" });
+    }
+
+    const result = await Result.findByIdAndDelete(resultId);
     if (!result) {
       return res.status(404).json({ error: "Result not found" });
     }
+
     res.json({ message: "✅ Result deleted successfully" });
   } catch (err) {
     console.error("❌ Error deleting result:", err);
@@ -133,22 +132,21 @@ router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/*                             ❌ Delete a Quiz                               */
+/*                              ❌ Delete a Quiz                              */
 /* -------------------------------------------------------------------------- */
 router.delete("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
     const quizId = req.params.id;
 
-// ✅ Validate ObjectId format before deleting
-if (!mongoose.Types.ObjectId.isValid(quizId)) {
-  return res.status(400).json({ error: "Invalid quiz ID format" });
-}
+    if (!mongoose.Types.ObjectId.isValid(quizId)) {
+      return res.status(400).json({ error: "Invalid quiz ID format" });
+    }
 
-const quiz = await Quiz.findByIdAndDelete(quizId);
-
+    const quiz = await Quiz.findByIdAndDelete(quizId);
     if (!quiz) {
       return res.status(404).json({ error: "Quiz not found" });
     }
+
     res.json({ message: "✅ Quiz deleted successfully" });
   } catch (err) {
     console.error("❌ Error deleting quiz:", err);
