@@ -8,7 +8,7 @@ import questionsRoute from "./routes/questions.js";
 import authRoute from "./routes/auth.js";
 import quizRoute from "./routes/quizzes.js";
 import resultsRoute from "./routes/results.js";
-import adminRoute from "./routes/admin.js";
+import adminRoutes from "./routes/admin.js"; // ✅ Admin routes
 
 dotenv.config();
 const app = express();
@@ -20,10 +20,10 @@ app.use(
     origin: [
       "http://localhost:5174",
       "https://medha-mantana-frontend.vercel.app",
-      "https://medha-mantana.vercel.app"
+      "https://medha-mantana.vercel.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Added
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Important for protected routes
     credentials: true,
   })
 );
@@ -34,7 +34,9 @@ app.use("/uploads", express.static("uploads"));
 
 // ✅ Root route
 app.get("/", (req, res) => {
-  res.send("🚀 Medha Manthana Backend is running! Sharpen Your Medha, Master Every Mantana.");
+  res.send(
+    "🚀 Medha Manthana Backend is running! Sharpen Your Medha, Master Every Mantana."
+  );
 });
 
 // ✅ API Routes
@@ -42,7 +44,9 @@ app.use("/api/questions", questionsRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/quizzes", quizRoute);
 app.use("/api/results", resultsRoute);
-app.use("/api/admin", adminRoute);
+
+// ✅ Admin Routes (Added for quiz management by admin)
+app.use("/api/admin", adminRoutes);
 
 // ✅ MongoDB Connection
 mongoose
@@ -51,8 +55,16 @@ mongoose
   })
   .then(() => {
     console.log("✅ MongoDB Connected Successfully");
+
+    // ✅ Start server
     app.listen(PORT, "0.0.0.0", () =>
       console.log(`🚀 Server running on port ${PORT}`)
     );
   })
   .catch((err) => console.error("❌ DB connection error:", err));
+
+// ✅ Optional: Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err.stack);
+  res.status(500).json({ error: "Internal Server Error" });
+});

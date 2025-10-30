@@ -6,6 +6,14 @@ import Quiz from "../models/Quiz.js";
 import Result from "../models/Result.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
+// ✅ Correct controller import path
+import {
+  getAllQuizzes,
+  createQuiz,
+  updateQuiz,
+  deleteQuiz,
+} from "../controller/quizController.js";
+
 const router = express.Router();
 
 /* -------------------------------------------------------------------------- */
@@ -53,15 +61,9 @@ router.post("/users", authMiddleware, adminOnly, async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      role,
-    });
-
+    const newUser = new User({ username, email, password: hashedPassword, role });
     await newUser.save();
+
     res.status(201).json({ message: "✅ User added successfully", user: newUser });
   } catch (err) {
     console.error("❌ Error adding user:", err);
@@ -104,7 +106,6 @@ router.put("/users/:id", authMiddleware, adminOnly, async (req, res) => {
 router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
     const userId = req.params.id;
-    console.log("🗑️ Deleting user with ID:", userId);
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid user ID format" });
@@ -116,15 +117,13 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
 
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
-      console.log("⚠️ User not found in DB.");
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log("✅ User deleted successfully:", user.email);
     res.json({ message: "✅ User deleted successfully" });
   } catch (err) {
     console.error("❌ Error deleting user:", err);
-    res.status(500).json({ error: err.message || "Server error deleting user" });
+    res.status(500).json({ error: "Server error deleting user" });
   }
 });
 
@@ -172,50 +171,15 @@ router.delete("/results/:id", authMiddleware, adminOnly, async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/*                              🧩 Get All Quizzes                            */
+/*                              🧠 Quiz Routes                                */
 /* -------------------------------------------------------------------------- */
-router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
-  try {
-    const quizzes = await Quiz.find()
-      .select("title duration numQuestions createdBy createdAt")
-      .populate("createdBy", "username")
-      .sort({ createdAt: -1 });
-
-    res.json({
-      quizzes,
-      message: quizzes.length ? "✅ Quizzes fetched" : "No quizzes found",
-    });
-  } catch (err) {
-    console.error("❌ Error fetching quizzes:", err);
-    res.status(500).json({ error: "Server error fetching quizzes" });
-  }
-});
+router.get("/quizzes", authMiddleware, adminOnly, getAllQuizzes);
+router.post("/quizzes", authMiddleware, adminOnly, createQuiz);
+router.put("/quizzes/:id", authMiddleware, adminOnly, updateQuiz);
+router.delete("/quizzes/:id", authMiddleware, adminOnly, deleteQuiz);
 
 /* -------------------------------------------------------------------------- */
-/*                              ❌ Delete a Quiz                              */
-/* -------------------------------------------------------------------------- */
-router.delete("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
-  try {
-    const quizId = req.params.id;
-
-    if (!mongoose.Types.ObjectId.isValid(quizId)) {
-      return res.status(400).json({ error: "Invalid quiz ID format" });
-    }
-
-    const quiz = await Quiz.findByIdAndDelete(quizId);
-    if (!quiz) {
-      return res.status(404).json({ error: "Quiz not found" });
-    }
-
-    res.json({ message: "✅ Quiz deleted successfully" });
-  } catch (err) {
-    console.error("❌ Error deleting quiz:", err);
-    res.status(500).json({ error: "Server error deleting quiz" });
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/*                             🧠 Admin Summary API                           */
+/*                             🧾 Admin Summary API                           */
 /* -------------------------------------------------------------------------- */
 router.get("/summary", authMiddleware, adminOnly, async (req, res) => {
   try {
