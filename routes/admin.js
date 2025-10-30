@@ -40,30 +40,26 @@ router.get("/users", authMiddleware, adminOnly, async (req, res) => {
 router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
     const userId = req.params.id;
+    console.log("🗑️ Deleting user with ID:", userId);
 
-    // 1️⃣ Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid user ID format" });
+    // Prevent admin from deleting their own account accidentally
+    if (req.user._id.toString() === userId) {
+      return res.status(400).json({ error: "You cannot delete your own admin account." });
     }
 
-    // 2️⃣ Prevent admin from deleting themselves
-    if (req.user && req.user._id && req.user._id.toString() === userId) {
-      return res.status(400).json({ error: "You cannot delete your own account" });
-    }
+    const user = await User.findByIdAndDelete(userId);
 
-    // 3️⃣ Try to delete the user
-    const deletedUser = await User.findByIdAndDelete(userId);
-
-    if (!deletedUser) {
+    if (!user) {
+      console.log("⚠️ User not found in DB.");
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 4️⃣ Success
+    console.log("✅ User deleted successfully:", user.email);
     res.json({ message: "✅ User deleted successfully" });
-  } catch (error) {
-  console.error("❌ Error deleting user:", error.message, error.stack);
-  res.status(500).json({ error: "Server error deleting user", details: error.message });
-}
+  } catch (err) {
+    console.error("❌ Error deleting user:", err);
+    res.status(500).json({ error: err.message || "Server error deleting user" });
+  }
 });
 
 /* -------------------------------------------------------------------------- */
