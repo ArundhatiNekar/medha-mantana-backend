@@ -5,8 +5,8 @@ import User from "../models/User.js";
 import Quiz from "../models/Quiz.js";
 import Result from "../models/Result.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { getAllResults } from "../controller/resultController.js";
 
-// ✅ Correct controller import path
 import {
   getAllQuizzes,
   createQuiz,
@@ -17,7 +17,7 @@ import {
 const router = express.Router();
 
 /* -------------------------------------------------------------------------- */
-/*                        🧱 Middleware: Verify Admin                        */
+/*                        🧱 Middleware: Verify Admin                         */
 /* -------------------------------------------------------------------------- */
 const adminOnly = (req, res, next) => {
   try {
@@ -57,7 +57,9 @@ router.post("/users", authMiddleware, adminOnly, async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ error: "User with this email already exists" });
+      return res
+        .status(400)
+        .json({ error: "User with this email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -112,7 +114,9 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
     }
 
     if (req.user && req.user._id.toString() === userId) {
-      return res.status(400).json({ error: "You cannot delete your own admin account." });
+      return res
+        .status(400)
+        .json({ error: "You cannot delete your own admin account." });
     }
 
     const user = await User.findByIdAndDelete(userId);
@@ -130,22 +134,7 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                             📊 Get All Results                             */
 /* -------------------------------------------------------------------------- */
-router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
-  try {
-    const quizzes = await Quiz.find()
-      .select("title description duration numQuestions createdBy createdAt")
-      .populate("createdBy", "username email role") // ✅ show who created it
-      .sort({ createdAt: -1 });
-
-    res.json({
-      quizzes,
-      message: quizzes.length ? "✅ Quizzes fetched" : "No quizzes found",
-    });
-  } catch (err) {
-    console.error("❌ Error fetching quizzes:", err);
-    res.status(500).json({ error: "Server error fetching quizzes" });
-  }
-});
+router.get("/results", getAllResults);
 
 /* -------------------------------------------------------------------------- */
 /*                              ❌ Delete Result                              */
