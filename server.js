@@ -9,7 +9,6 @@ import authRoute from "./routes/auth.js";
 import quizRoute from "./routes/quizzes.js";
 import resultsRoute from "./routes/results.js";
 import adminRoutes from "./routes/admin.js"; // ✅ Admin routes
-import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -45,10 +44,14 @@ app.use("/api/questions", questionsRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/quizzes", quizRoute);
 app.use("/api/results", resultsRoute);
-app.use("/api/admin", adminRoutes);
 
 // ✅ Admin Routes (Added for quiz management by admin)
 app.use("/api/admin", adminRoutes);
+
+// ✅ Debug Route - Check Admin Results Route Health
+app.get("/api/admin/test-results-route", (req, res) => {
+  res.json({ message: "✅ Admin Results Route is reachable!" });
+});
 
 // ✅ MongoDB Connection
 mongoose

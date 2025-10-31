@@ -134,7 +134,14 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                             📊 Get All Results                             */
 /* -------------------------------------------------------------------------- */
-router.get("/results", getAllResults);
+router.get("/results", async (req, res) => {
+  try {
+    const results = await Result.find().populate("user quiz");
+    res.status(200).json(results);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching results", error: err.message });
+  }
+});
 
 /* -------------------------------------------------------------------------- */
 /*                              ❌ Delete Result                              */
@@ -162,19 +169,12 @@ router.delete("/results/:id", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                              🧩 Get All Quizzes                            */
 /* -------------------------------------------------------------------------- */
-router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
+router.get("/quizzes", async (req, res) => {
   try {
-    const quizzes = await Quiz.find()
-      .select("title description duration numQuestions createdBy createdAt categories certificateEnabled")
-      .sort({ createdAt: -1 });
-
-    res.json({
-      quizzes,
-      message: quizzes.length ? "✅ Quizzes fetched" : "No quizzes found",
-    });
+    const quizzes = await Quiz.find();
+    res.status(200).json(quizzes);
   } catch (err) {
-    console.error("❌ Error fetching quizzes:", err);
-    res.status(500).json({ error: "Server error fetching quizzes" });
+    res.status(500).json({ message: "Error fetching quizzes", error: err.message });
   }
 });
 
@@ -244,23 +244,13 @@ router.put("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                              ❌ Delete a Quiz                              */
 /* -------------------------------------------------------------------------- */
-router.delete("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
+router.delete("/quiz/:id", async (req, res) => {
   try {
-    const quizId = req.params.id;
-
-    if (!mongoose.Types.ObjectId.isValid(quizId)) {
-      return res.status(400).json({ error: "Invalid quiz ID format" });
-    }
-
-    const quiz = await Quiz.findByIdAndDelete(quizId);
-    if (!quiz) {
-      return res.status(404).json({ error: "Quiz not found" });
-    }
-
-    res.json({ message: "✅ Quiz deleted successfully" });
+    const quiz = await Quiz.findByIdAndDelete(req.params.id);
+    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
+    res.json({ message: "Quiz deleted successfully" });
   } catch (err) {
-    console.error("❌ Error deleting quiz:", err);
-    res.status(500).json({ error: "Server error deleting quiz" });
+    res.status(500).json({ message: "Error deleting quiz", error: err.message });
   }
 });
 
