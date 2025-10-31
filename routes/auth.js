@@ -18,7 +18,7 @@ const generateToken = (user) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                           👤 REGISTER (Student/Faculty)                    */
+/*                           👤 MANUAL REGISTER                               */
 /* -------------------------------------------------------------------------- */
 router.post("/register", async (req, res) => {
   try {
@@ -29,29 +29,27 @@ router.post("/register", async (req, res) => {
 
     const normalizedEmail = email.toLowerCase();
 
-    // 🔒 Faculty registration code check
+    // 🧩 Validate faculty registration code
     if (role === "faculty") {
       const FACULTY_SECRET = process.env.FACULTY_SECRET || "supersecret123";
-      if (facultyCode !== FACULTY_SECRET) {
+      if (facultyCode !== FACULTY_SECRET)
         return res.status(403).json({ error: "❌ Invalid faculty code" });
-      }
     }
 
-    // ❌ Block manual admin registration
-    if (role === "admin") {
+    // ❌ Prevent admin self-registration
+    if (role === "admin")
       return res.status(403).json({
-        error: "❌ Admin registration is not allowed. Please contact system admin.",
+        error: "❌ Admin registration not allowed. Contact system admin.",
       });
-    }
 
-    // ✅ Validate existing user
+    // ✅ Check if user exists
     const existingUser = await User.findOne({
       $or: [{ username }, { email: normalizedEmail }],
     });
     if (existingUser)
       return res.status(400).json({ error: "User already exists" });
 
-    // 🔑 Hash password
+    // 🔐 Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 🆕 Create new user
@@ -59,14 +57,14 @@ router.post("/register", async (req, res) => {
       username,
       email: normalizedEmail,
       password: hashedPassword,
-      role: role === "faculty" ? "faculty" : "student",
+      role,
     });
 
     await newUser.save();
     const token = generateToken(newUser);
 
     res.status(201).json({
-      message: `✅ ${newUser.role} registered successfully`,
+      message: `✅ ${role} registered successfully`,
       token,
       user: {
         id: newUser._id,
@@ -82,7 +80,7 @@ router.post("/register", async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/*                               🔐 LOGIN                                     */
+/*                               🔐 MANUAL LOGIN                              */
 /* -------------------------------------------------------------------------- */
 router.post("/login", async (req, res) => {
   try {
@@ -97,7 +95,6 @@ router.post("/login", async (req, res) => {
     if (!loginId || !password)
       return res.status(400).json({ error: "All fields are required" });
 
-    // 🔍 Find user
     const query =
       loginId.includes("@") && loginId.includes(".")
         ? { email: loginId.toLowerCase() }
@@ -106,7 +103,6 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne(query);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // 🧩 Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ error: "Invalid credentials" });
@@ -128,8 +124,9 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: "Server error during login" });
   }
 });
+
 /* -------------------------------------------------------------------------- */
-/*                       👩‍🏫 ADMIN LOGIN (Manual only)                        */
+/*                          🧑‍🏫 ADMIN LOGIN (Manual only)                     */
 /* -------------------------------------------------------------------------- */
 router.post("/admin-login", async (req, res) => {
   try {
@@ -144,17 +141,18 @@ router.post("/admin-login", async (req, res) => {
     if (adminCode !== ADMIN_SECRET)
       return res.status(403).json({ error: "❌ Invalid admin code" });
 
-    const admin = await User.findOne({ email, role: "admin" });
+    const admin = await User.findOne({ email: email.toLowerCase(), role: "admin" });
     if (!admin)
       return res
         .status(404)
-        .json({ error: "Admin not found or not authorized" });
+        .json({ error: "Admin not found or unauthorized" });
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch)
       return res.status(400).json({ error: "Invalid credentials" });
 
     const token = generateToken(admin);
+
     res.json({
       message: "✅ Admin login successful",
       token,
@@ -171,41 +169,30 @@ router.post("/admin-login", async (req, res) => {
   }
 });
 
-
 /* -------------------------------------------------------------------------- */
-/*                         🔵 GOOGLE REGISTER                                 */
+/*                         🔵 GOOGLE REGISTER (Student + Faculty)             */
 /* -------------------------------------------------------------------------- */
 router.post("/google-register", async (req, res) => {
   try {
-    const { username, email, password, role, facultyCode } = req.body;
+    const { email, name, role, facultyCode } = req.body;
 
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const normalizedEmail = email.toLowerCase();
 
-    // 🧩 Validate role codes
+    // 🧩 Faculty code check
     if (role === "faculty") {
       const FACULTY_SECRET = process.env.FACULTY_SECRET || "supersecret123";
       if (facultyCode !== FACULTY_SECRET)
         return res.status(403).json({ error: "❌ Invalid faculty code" });
     }
 
-    if (role === "admin") {
-      const ADMIN_SECRET = process.env.ADMIN_SECRET || "adminsecret123";
-      if (facultyCode !== ADMIN_SECRET)
-        return res.status(403).json({ error: "❌ Invalid admin code" });
-    }
-
-    const finalRole =
-      role === "faculty" ? "faculty" : role === "admin" ? "admin" : "student";
+    if (role === "admin")
+      return res.status(403).json({ error: "❌ Admin Google registration not allowed" });
 
     let user = await User.findOne({ email: normalizedEmail });
 
     if (user) {
-      if (user.role !== finalRole) {
-        user.role = finalRole;
-        await user.save();
-      }
       const token = generateToken(user);
       return res.json({
         message: "✅ Logged in with Google",
@@ -214,21 +201,21 @@ router.post("/google-register", async (req, res) => {
       });
     }
 
-    const newUser = new User({
-      username: username || normalizedEmail.split("@")[0],
+    user = new User({
+      username: name || normalizedEmail.split("@")[0],
       email: normalizedEmail,
-      password: await bcrypt.hash(password || "google-oauth", 10),
-      role: finalRole,
+      password: await bcrypt.hash("google-oauth", 10),
+      role: role === "faculty" ? "faculty" : "student",
       isGoogleUser: true,
     });
 
-    await newUser.save();
-    const token = generateToken(newUser);
+    await user.save();
+    const token = generateToken(user);
 
     res.status(201).json({
-      message: "✅ Google account registered successfully",
+      message: `✅ ${role} registered via Google successfully`,
       token,
-      user: newUser,
+      user,
     });
   } catch (err) {
     console.error("❌ Google registration error:", err);
@@ -237,35 +224,24 @@ router.post("/google-register", async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/*                          🔵 GOOGLE LOGIN                                   */
+/*                         🔵 GOOGLE LOGIN (Student + Faculty)                */
 /* -------------------------------------------------------------------------- */
 router.post("/google-login", async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { email } = req.body;
 
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const normalizedEmail = email.toLowerCase();
     let user = await User.findOne({ email: normalizedEmail });
 
-    if (!user) {
-      user = new User({
-        username: name || normalizedEmail.split("@")[0],
-        email: normalizedEmail,
-        password: await bcrypt.hash("google-oauth", 10),
-        role: "student",
-        isGoogleUser: true,
-      });
-      await user.save();
-    }
+    if (!user)
+      return res.status(404).json({ error: "User not found. Please register first." });
 
-    if (user.role === "admin" || user.role === "faculty")
-      return res
-        .status(403)
-        .json({ error: "Admins and faculty must use manual login." });
+    if (user.role === "admin")
+      return res.status(403).json({ error: "Admins must use manual login." });
 
     const token = generateToken(user);
-
     res.json({
       message: "✅ Google login successful",
       token,

@@ -21,9 +21,13 @@ const QuizSchema = new mongoose.Schema(
     // ✅ Duration in SECONDS
     duration: { type: Number, required: true },
 
-    createdBy: { type: String, required: true },
+    // ✅ Optional description for quiz
+    description: { type: String, default: "" }, // 🆕 Added safely
 
-     // ---------- certificate fields ----------
+    // ✅ Store creator name or user reference
+    createdBy: { type: String, required: true }, // keeping your format intact
+
+    // ---------- certificate fields ----------
     certificateEnabled: { type: Boolean, default: false }, // faculty toggles this
     certificateTemplate: { type: String, default: "" }, // optional path or template name
     certificatePassingScore: { type: Number, default: 0 }, // optional threshold

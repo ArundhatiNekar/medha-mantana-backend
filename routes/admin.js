@@ -130,20 +130,20 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                             📊 Get All Results                             */
 /* -------------------------------------------------------------------------- */
-router.get("/results", authMiddleware, adminOnly, async (req, res) => {
+router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
   try {
-    const results = await Result.find()
-      .populate("studentId", "username email")
-      .populate("quizId", "title")
-      .sort({ date: -1 });
+    const quizzes = await Quiz.find()
+      .select("title description duration numQuestions createdBy createdAt")
+      .populate("createdBy", "username email role") // ✅ show who created it
+      .sort({ createdAt: -1 });
 
     res.json({
-      results,
-      message: results.length ? "✅ Results fetched" : "No results found",
+      quizzes,
+      message: quizzes.length ? "✅ Quizzes fetched" : "No quizzes found",
     });
   } catch (err) {
-    console.error("❌ Error fetching results:", err);
-    res.status(500).json({ error: "Server error fetching results" });
+    console.error("❌ Error fetching quizzes:", err);
+    res.status(500).json({ error: "Server error fetching quizzes" });
   }
 });
 
@@ -171,12 +171,109 @@ router.delete("/results/:id", authMiddleware, adminOnly, async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/*                              🧠 Quiz Routes                                */
+/*                              🧩 Get All Quizzes                            */
 /* -------------------------------------------------------------------------- */
-router.get("/quizzes", authMiddleware, adminOnly, getAllQuizzes);
-router.post("/quizzes", authMiddleware, adminOnly, createQuiz);
-router.put("/quizzes/:id", authMiddleware, adminOnly, updateQuiz);
-router.delete("/quizzes/:id", authMiddleware, adminOnly, deleteQuiz);
+router.get("/quizzes", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const quizzes = await Quiz.find()
+      .select("title description duration numQuestions createdBy createdAt categories certificateEnabled")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      quizzes,
+      message: quizzes.length ? "✅ Quizzes fetched" : "No quizzes found",
+    });
+  } catch (err) {
+    console.error("❌ Error fetching quizzes:", err);
+    res.status(500).json({ error: "Server error fetching quizzes" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              ➕ Add a New Quiz                              */
+/* -------------------------------------------------------------------------- */
+router.post("/quizzes", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { title, description, numQuestions, duration, categories, createdBy } = req.body;
+
+    if (!title || !numQuestions || !duration || !createdBy) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const quiz = new Quiz({
+      title,
+      description,
+      numQuestions,
+      duration,
+      categories: categories?.length ? categories.map((c) => c.toLowerCase()) : ["all"],
+      createdBy,
+    });
+
+    await quiz.save();
+    res.status(201).json({ message: "✅ Quiz added successfully", quiz });
+  } catch (err) {
+    console.error("❌ Error adding quiz:", err);
+    res.status(500).json({ error: "Server error adding quiz" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              ✏️ Update a Quiz                              */
+/* -------------------------------------------------------------------------- */
+router.put("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const { title, description, numQuestions, duration, categories } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(quizId)) {
+      return res.status(400).json({ error: "Invalid quiz ID format" });
+    }
+
+    const updatedQuiz = await Quiz.findByIdAndUpdate(
+      quizId,
+      {
+        title,
+        description,
+        numQuestions,
+        duration,
+        categories: categories?.map((c) => c.toLowerCase()),
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedQuiz) {
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+
+    res.json({ message: "✅ Quiz updated successfully", quiz: updatedQuiz });
+  } catch (err) {
+    console.error("❌ Error updating quiz:", err);
+    res.status(500).json({ error: "Server error updating quiz" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              ❌ Delete a Quiz                              */
+/* -------------------------------------------------------------------------- */
+router.delete("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const quizId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(quizId)) {
+      return res.status(400).json({ error: "Invalid quiz ID format" });
+    }
+
+    const quiz = await Quiz.findByIdAndDelete(quizId);
+    if (!quiz) {
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+
+    res.json({ message: "✅ Quiz deleted successfully" });
+  } catch (err) {
+    console.error("❌ Error deleting quiz:", err);
+    res.status(500).json({ error: "Server error deleting quiz" });
+  }
+});
 
 /* -------------------------------------------------------------------------- */
 /*                             🧾 Admin Summary API                           */
