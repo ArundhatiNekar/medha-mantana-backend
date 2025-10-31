@@ -13,19 +13,16 @@ const answerSnapshotSchema = new mongoose.Schema({
 
 const resultSchema = new mongoose.Schema(
   {
-    quizId: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
-    studentName: { type: String, required: true, trim: true },
-    answers: [answerSnapshotSchema],
-
-    // 🔑 NEW: Preserve shuffled order of questions
-    questionOrder: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
-
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    quiz: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
     score: { type: Number, required: true },
-    total: { type: Number, required: true },
-    timeTaken: { type: Number, required: true },
-    date: { type: Date, default: Date.now },
+    totalQuestions: { type: Number, required: true },
+    correctAnswers: { type: Number, required: true },
+    wrongAnswers: { type: Number, required: true },
+    attemptedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
+
 
 export default mongoose.model("Result", resultSchema);

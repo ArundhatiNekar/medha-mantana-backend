@@ -132,13 +132,17 @@ router.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/*                             📊 Get All Results                             */
+/*                             📊 Get All Results (Fixed Populate)            */
 /* -------------------------------------------------------------------------- */
 router.get("/results", async (req, res) => {
   try {
-    const results = await Result.find().populate("user quiz");
+    const results = await Result.find().populate("userId quizId")
+      .populate({ path: "user", select: "username email role", strictPopulate: false })
+      .populate({ path: "quiz", select: "title numQuestions duration", strictPopulate: false });
+
     res.status(200).json(results);
   } catch (err) {
+    console.error("❌ Error fetching results:", err);
     res.status(500).json({ message: "Error fetching results", error: err.message });
   }
 });
