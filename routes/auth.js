@@ -84,13 +84,7 @@ router.post("/register", async (req, res) => {
 /* -------------------------------------------------------------------------- */
 router.post("/login", async (req, res) => {
   try {
-    const loginId =
-      req.body.loginId ||
-      req.body.usernameOrEmail ||
-      req.body.username ||
-      req.body.email ||
-      "";
-    const password = req.body.password || "";
+    const { loginId, password } = req.body;
 
     if (!loginId || !password)
       return res.status(400).json({ error: "All fields are required" });
@@ -103,9 +97,9 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne(query);
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // ✅ Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ error: "Invalid credentials" });
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
     const token = generateToken(user);
 
@@ -141,7 +135,10 @@ router.post("/admin-login", async (req, res) => {
     if (adminCode !== ADMIN_SECRET)
       return res.status(403).json({ error: "❌ Invalid admin code" });
 
-    const admin = await User.findOne({ email: email.toLowerCase(), role: "admin" });
+    const admin = await User.findOne({
+      email: email.toLowerCase(),
+      role: "admin",
+    });
     if (!admin)
       return res
         .status(404)
@@ -180,15 +177,18 @@ router.post("/google-register", async (req, res) => {
 
     const normalizedEmail = email.toLowerCase();
 
-    // 🧩 Faculty code check
+    // 🧩 Faculty code validation for Google sign-up
     if (role === "faculty") {
       const FACULTY_SECRET = process.env.FACULTY_SECRET || "supersecret123";
       if (facultyCode !== FACULTY_SECRET)
         return res.status(403).json({ error: "❌ Invalid faculty code" });
     }
 
+    // ❌ Prevent admin Google registration
     if (role === "admin")
-      return res.status(403).json({ error: "❌ Admin Google registration not allowed" });
+      return res
+        .status(403)
+        .json({ error: "❌ Admin Google registration not allowed" });
 
     let user = await User.findOne({ email: normalizedEmail });
 
@@ -201,6 +201,7 @@ router.post("/google-register", async (req, res) => {
       });
     }
 
+    // ✅ New Google user creation
     user = new User({
       username: name || normalizedEmail.split("@")[0],
       email: normalizedEmail,
@@ -233,13 +234,17 @@ router.post("/google-login", async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const normalizedEmail = email.toLowerCase();
-    let user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user)
-      return res.status(404).json({ error: "User not found. Please register first." });
+      return res
+        .status(404)
+        .json({ error: "User not found. Please register first." });
 
     if (user.role === "admin")
-      return res.status(403).json({ error: "Admins must use manual login." });
+      return res
+        .status(403)
+        .json({ error: "Admins must use manual login." });
 
     const token = generateToken(user);
     res.json({
