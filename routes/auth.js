@@ -29,7 +29,7 @@ router.post("/register", async (req, res) => {
 
     const normalizedEmail = email.toLowerCase();
 
-    // 🧩 Validate faculty registration code
+    // 🧩 Faculty code validation
     if (role === "faculty") {
       const FACULTY_SECRET = process.env.FACULTY_SECRET || "supersecret123";
       if (facultyCode !== FACULTY_SECRET)
@@ -84,11 +84,15 @@ router.post("/register", async (req, res) => {
 /* -------------------------------------------------------------------------- */
 router.post("/login", async (req, res) => {
   try {
-    const { loginId, password } = req.body;
+    // ✅ Accepts email, username, or loginId — frontend friendly
+    const loginId =
+      req.body.loginId || req.body.email || req.body.username || "";
+    const password = req.body.password || "";
 
     if (!loginId || !password)
       return res.status(400).json({ error: "All fields are required" });
 
+    // Detect whether it's email or username
     const query =
       loginId.includes("@") && loginId.includes(".")
         ? { email: loginId.toLowerCase() }
