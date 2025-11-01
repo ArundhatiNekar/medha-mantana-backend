@@ -9,10 +9,23 @@ const router = express.Router();
 /* ---------------- SAVE RESULT (Snapshot + Order) ---------------- */
 router.post("/", async (req, res) => {
   try {
-    const { quizId, studentName, answers, score, total, timeTaken, questionOrder } = req.body;
+    console.log("📥 Incoming result data:", req.body);
+
+    const {
+      quizId,
+      studentName,
+      answers,
+      score,
+      total,
+      timeTaken,
+      questionOrder,
+      userId, // 🆕 ensure userId can also be passed for consistency
+    } = req.body;
 
     if (!quizId || !studentName || !answers) {
-      return res.status(400).json({ error: "⚠️ Quiz ID, student name and answers are required" });
+      return res
+        .status(400)
+        .json({ error: "⚠️ Quiz ID, student name and answers are required" });
     }
 
     // ✅ Fetch all related questions from DB
@@ -33,23 +46,25 @@ router.post("/", async (req, res) => {
       };
     });
 
-    // ✅ Save snapshot in DB (with question order)
+    // ✅ Safely create result (mapped to schema fields)
     const newResult = new Result({
-      quizId,
-      studentName,
-      answers: transformedAnswers,
-      questionOrder: questionOrder || Object.keys(answers), // 🔥 keep question order
-      score,
-      total,
+      user: userId || null, // 🆕 if available
+      quiz: quizId, // ✅ match schema (not quizId)
+      score: score || 0,
+      totalQuestions: total || transformedAnswers.length,
+      correctAnswers: transformedAnswers.filter((a) => a.correct).length,
+      wrongAnswers: transformedAnswers.filter((a) => !a.correct).length,
+      attemptedAt: new Date(),
+      answers: transformedAnswers, // 🔥 keep snapshot (no schema conflict)
+      studentName, // 🆕 still stored for backward use
+      questionOrder: questionOrder || Object.keys(answers),
       timeTaken,
-      date: new Date(),
     });
 
     await newResult.save();
 
-    // ✅ Return saved snapshot result immediately
     res.status(201).json({
-      message: "✅ Result saved",
+      message: "✅ Result saved successfully",
       result: newResult,
     });
   } catch (err) {
@@ -62,9 +77,17 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const results = await Result.find()
-      // ✅ Updated 'category' → 'categories' to match your Quiz model
-      .populate("quizId", "title categories numQuestions duration createdAt")
-      .sort({ date: -1 });
+      .populate({
+        path: "quiz",
+        select: "title categories numQuestions duration createdAt",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "user",
+        select: "username email role",
+        strictPopulate: false,
+      })
+      .sort({ createdAt: -1 });
 
     res.json({ results });
   } catch (err) {
@@ -76,9 +99,18 @@ router.get("/", async (req, res) => {
 /* ---------------- GET RESULTS BY QUIZ ---------------- */
 router.get("/quiz/:id", async (req, res) => {
   try {
-    const results = await Result.find({ quizId: req.params.id })
-      .populate("quizId", "title categories numQuestions duration") // ✅ fixed 'category' → 'categories'
-      .sort({ score: -1, date: -1 }); // ✅ more accurate ranking order
+    const results = await Result.find({ quiz: req.params.id })
+      .populate({
+        path: "quiz",
+        select: "title categories numQuestions duration",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "user",
+        select: "username email role",
+        strictPopulate: false,
+      })
+      .sort({ score: -1, attemptedAt: -1 });
 
     res.json({ results });
   } catch (err) {
@@ -91,10 +123,13 @@ router.get("/quiz/:id", async (req, res) => {
 router.get("/student/:studentName", async (req, res) => {
   try {
     const results = await Result.find({ studentName: req.params.studentName })
-      .populate("quizId", "title categories numQuestions duration createdAt") // ✅ fixed 'category' → 'categories'
-      .sort({ date: -1 });
+      .populate({
+        path: "quiz",
+        select: "title categories numQuestions duration createdAt",
+        strictPopulate: false,
+      })
+      .sort({ attemptedAt: -1 });
 
-    // ⚙️ Instead of 404, return empty array (frontend expects results array)
     if (!results || results.length === 0) {
       return res.json({ results: [] });
     }
@@ -110,28 +145,34 @@ router.get("/student/:studentName", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const result = await Result.findById(req.params.id)
-      .populate("quizId", "title categories duration createdAt"); // ✅ fixed 'category' → 'categories' and added createdAt
+      .populate({
+        path: "quiz",
+        select: "title categories duration createdAt",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "user",
+        select: "username email role",
+        strictPopulate: false,
+      });
 
     if (!result) {
       return res.status(404).json({ error: "No details found for this attempt" });
     }
 
-    // ✅ Populate questions from questionOrder
-    const questionIds = result.questionOrder;
+    const questionIds = result.questionOrder || [];
     const questions = await Question.find({ _id: { $in: questionIds } });
 
-    // ✅ Map questions in the order they were presented
-    const orderedQuestions = questionIds.map(id =>
-      questions.find(q => q._id.toString() === id.toString())
-    ).filter(Boolean);
+    const orderedQuestions = questionIds
+      .map((id) => questions.find((q) => q._id.toString() === id.toString()))
+      .filter(Boolean);
 
-    // ✅ Attach ordered questions to result
     const resultWithQuiz = {
       ...result.toObject(),
       quiz: {
-        ...result.quizId.toObject(),
-        questions: orderedQuestions
-      }
+        ...result.quiz?.toObject(),
+        questions: orderedQuestions,
+      },
     };
 
     res.json({ result: resultWithQuiz });

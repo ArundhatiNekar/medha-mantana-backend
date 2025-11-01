@@ -248,13 +248,23 @@ router.put("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                              ❌ Delete a Quiz                              */
 /* -------------------------------------------------------------------------- */
-router.delete("/quiz/:id", async (req, res) => {
+router.delete("/quizzes/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
-    const quiz = await Quiz.findByIdAndDelete(req.params.id);
-    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
-    res.json({ message: "Quiz deleted successfully" });
+    const quizId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(quizId)) {
+      return res.status(400).json({ error: "Invalid quiz ID format" });
+    }
+
+    const quiz = await Quiz.findByIdAndDelete(quizId);
+    if (!quiz) {
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+
+    res.json({ message: "✅ Quiz deleted successfully" });
   } catch (err) {
-    res.status(500).json({ message: "Error deleting quiz", error: err.message });
+    console.error("❌ Error deleting quiz:", err);
+    res.status(500).json({ error: "Server error deleting quiz" });
   }
 });
 

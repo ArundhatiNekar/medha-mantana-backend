@@ -13,16 +13,26 @@ const answerSnapshotSchema = new mongoose.Schema({
 
 const resultSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    quiz: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
+    // 🔥 Compatible with both old & new routes
+    quizId: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
+    studentName: { type: String, required: true },
+
+    // ✅ snapshot & order
+    answers: [answerSnapshotSchema],
+    questionOrder: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
+
+    // ✅ scoring & timing
     score: { type: Number, required: true },
-    totalQuestions: { type: Number, required: true },
-    correctAnswers: { type: Number, required: true },
-    wrongAnswers: { type: Number, required: true },
+    total: { type: Number, required: true },
+    timeTaken: { type: Number, default: 0 },
+
+    // ✅ optional older fields
+    totalQuestions: { type: Number },
+    correctAnswers: { type: Number },
+    wrongAnswers: { type: Number },
     attemptedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
-
 
 export default mongoose.model("Result", resultSchema);
