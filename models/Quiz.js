@@ -36,4 +36,26 @@ const QuizSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/* ---------------------------------------------
+✅  Additional Enhancements (without removing anything)
+----------------------------------------------*/
+
+// 🆕 Virtual field to auto-populate question count if not manually given
+QuizSchema.virtual("questionCount").get(function () {
+  return this.questionIds?.length || 0;
+});
+
+// 🆕 Middleware to normalize category names to lowercase before saving
+QuizSchema.pre("save", function (next) {
+  if (this.categories && Array.isArray(this.categories)) {
+    this.categories = this.categories.map(cat => cat.toLowerCase());
+  }
+  next();
+});
+
+// 🆕 Static helper method to find quizzes by creator (useful for faculty dashboard)
+QuizSchema.statics.findByCreator = function (creator) {
+  return this.find({ createdBy: creator });
+};
+
 export default mongoose.model("Quiz", QuizSchema);

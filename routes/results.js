@@ -1,31 +1,40 @@
 // backend/routes/results.js
 import express from "express";
+import mongoose from "mongoose";
 import Result from "../models/Result.js";
 import Quiz from "../models/Quiz.js";
 import Question from "../models/Question.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /* ---------------- SAVE RESULT (Snapshot + Order) ---------------- */
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   try {
     console.log("📥 Incoming result data:", req.body);
 
     const {
-      quizId,
-      studentName,
+      quiz,
       answers,
       score,
-      total,
+      totalQuestions,
+      correctAnswers,
+      wrongAnswers,
       timeTaken,
       questionOrder,
-      userId, // 🆕 ensure userId can also be passed for consistency
     } = req.body;
 
-    if (!quizId || !studentName || !answers) {
+    const user = req.user._id;
+    const studentName = req.user.username;
+
+    if (!quiz || !answers) {
       return res
         .status(400)
-        .json({ error: "⚠️ Quiz ID, student name and answers are required" });
+        .json({ error: "⚠️ Quiz ID and answers are required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(quiz)) {
+      return res.status(400).json({ error: "Invalid quiz ID" });
     }
 
     // ✅ Fetch all related questions from DB
@@ -48,17 +57,17 @@ router.post("/", async (req, res) => {
 
     // ✅ Safely create result (mapped to schema fields)
     const newResult = new Result({
-      user: userId || null, // 🆕 if available
-      quiz: quizId, // ✅ match schema (not quizId)
-      score: score || 0,
-      totalQuestions: total || transformedAnswers.length,
-      correctAnswers: transformedAnswers.filter((a) => a.correct).length,
-      wrongAnswers: transformedAnswers.filter((a) => !a.correct).length,
-      attemptedAt: new Date(),
-      answers: transformedAnswers, // 🔥 keep snapshot (no schema conflict)
-      studentName, // 🆕 still stored for backward use
+      quiz,
+      user,
+      studentName,
+      answers: transformedAnswers,
       questionOrder: questionOrder || Object.keys(answers),
+      score: score || 0,
+      totalQuestions: totalQuestions || transformedAnswers.length,
+      correctAnswers: correctAnswers || transformedAnswers.filter((a) => a.correct).length,
+      wrongAnswers: wrongAnswers || transformedAnswers.filter((a) => !a.correct).length,
       timeTaken,
+      attemptedAt: new Date(),
     });
 
     await newResult.save();

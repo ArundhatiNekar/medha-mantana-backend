@@ -9,6 +9,9 @@ import { v4 as uuidv4 } from "uuid";
 import Question from "../models/Question.js";
 import CSVUpload from "../models/CSVUpload.js";
 
+import Quiz from "../models/Quiz.js";
+import { Parser } from "json2csv";
+
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
@@ -250,30 +253,19 @@ router.get("/csv-files", async (req, res) => {
 });
 
 /* ------------------ DOWNLOAD CSV (by id) ------------------ */
-router.get("/download-csv/:id", async (req, res) => {
+router.get("/download-csv/:quizId", async (req, res) => {
   try {
-    const file = await CSVUpload.findById(req.params.id);
-    if (!file) {
-      console.log("File not found in DB:", req.params.id);
-      return res.status(404).json({ error: "CSV file not found" });
-    }
+    const quiz = await Quiz.findById(req.params.quizId).populate("questions");
+    if (!quiz) return res.status(404).json({ error: "Quiz not found" });
 
-    const filePath = path.join(process.cwd(), "uploads", file.filename);
-    console.log("Looking for file at:", filePath);
-    console.log("File exists:", fs.existsSync(filePath));
+    // ✅ FIX: field names must match Question schema
+    const fields = ["question", "options", "answer", "category", "explanation"];
+    const parser = new Parser({ fields });
+    const csv = parser.parse(quiz.questions);
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "File not found on server" });
-    }
-
-    res.setHeader("Content-Disposition", `attachment; filename="${file.originalname}"`);
-    res.set("Content-Type", "text/csv");
-    res.sendFile(filePath, (err) => {
-      if (err) {
-        console.error("Error sending file:", err);
-        res.status(500).json({ error: "Error sending file" });
-      }
-    });
+    res.header("Content-Type", "text/csv");
+    res.attachment(`${quiz.title}.csv`);
+    res.send(csv);
   } catch (err) {
     console.error("Download error:", err);
     res.status(500).json({ error: err.message });
@@ -309,7 +301,7 @@ router.get("/sample-csv", (req, res) => {
     ["Which planet is red?", "Earth", "Mars", "Jupiter", "Saturn", "Mars", "general", "Mars looks red due to iron oxide"],
   ];
   const csvStream = stringify(data);
-  res.setHeader("Content-disposition", "attachment; filename=sample_questions.csv");
+  res.setHeader("Content-Disposition", "attachment; filename=sample_questions.csv");
   res.set("Content-Type", "text/csv");
   csvStream.pipe(res);
 });
