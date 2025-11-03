@@ -227,34 +227,60 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
   }
 });
 
-/* ------------------ LIST CSV FILES ------------------ */
-router.get("/csv-files", async (req, res) => {
+/* ------------------ DOWNLOAD UPLOADED CSV (by fileId) ------------------ */
+router.get("/download-upload/:fileId", async (req, res) => {
   try {
-    const files = await CSVUpload.find().sort({ uploadedAt: -1 });
-    res.json(files);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    const { fileId } = req.params;
 
-/* ------------------ DOWNLOAD ORIGINAL UPLOADED CSV ------------------ */
-router.get("/download-upload/:csvId", async (req, res) => {
-  try {
-    const file = await CSVUpload.findById(req.params.csvId);
-    if (!file) {
+    // Find CSV metadata
+    const csvFile = await CSVUpload.findById(fileId);
+    if (!csvFile) {
       return res.status(404).json({ error: "CSV file not found" });
     }
 
-    const filePath = path.join(process.cwd(), "uploads", file.filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "Uploaded file missing on server" });
+    // Find all questions that came from this CSV file
+    const questions = await Question.find({
+      $or: [{ csvFileId: fileId }, { batchId: csvFile.batchId }],
+    });
+
+    if (!questions.length) {
+      return res.status(404).json({ error: "No questions found for this CSV file" });
     }
 
-    // Send the original uploaded CSV file for download
-    res.download(filePath, file.originalname);
+    // Prepare CSV data
+    const fields = [
+      "question",
+      "option1",
+      "option2",
+      "option3",
+      "option4",
+      "answer",
+      "category",
+      "explanation"
+    ];
+
+    // Format questions properly
+    const csvData = questions.map((q) => ({
+      question: q.question,
+      option1: q.options[0] || "",
+      option2: q.options[1] || "",
+      option3: q.options[2] || "",
+      option4: q.options[3] || "",
+      answer: q.answer,
+      category: q.category,
+      explanation: q.explanation || "",
+    }));
+
+    const parser = new Parser({ fields });
+    const csv = parser.parse(csvData);
+
+    // Send CSV file
+    res.header("Content-Type", "text/csv");
+    res.attachment(csvFile.originalname || `uploaded_${fileId}.csv`);
+    res.send(csv);
   } catch (err) {
     console.error("❌ CSV download error:", err);
-    res.status(500).json({ error: "Error downloading uploaded CSV" });
+    res.status(500).json({ error: err.message });
   }
 });
 
