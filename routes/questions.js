@@ -237,33 +237,6 @@ router.get("/csv-files", async (req, res) => {
   }
 });
 
-/* ------------------ DOWNLOAD CSV (by quizId) ------------------ */
-router.get("/download-csv/quiz/:quizId", async (req, res) => {
-  try {
-    const quiz = await Quiz.findById(req.params.quizId).populate("questionIds");
-    if (!quiz) return res.status(404).json({ error: "Quiz not found" });
-
-    const questions = (quiz.questionIds || []).map(q => ({
-      question: q.question,
-      options: q.options,
-      answer: q.answer,
-      category: q.category,
-      explanation: q.explanation || "",
-    }));
-
-    const fields = ["question", "options", "answer", "category", "explanation"];
-    const parser = new Parser({ fields });
-    const csv = parser.parse(questions);
-
-    res.header("Content-Type", "text/csv");
-    res.attachment(`${quiz.title || "quiz"}.csv`);
-    res.send(csv);
-  } catch (err) {
-    console.error("Download error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 /* ------------------ DOWNLOAD CSV (by csvFile id) ------------------ */
 // ✅ Download questions as CSV for a given quiz
 router.get("/download-csv/:quizId", async (req, res) => {
