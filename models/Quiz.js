@@ -13,7 +13,7 @@ const QuizSchema = new mongoose.Schema(
 
     numQuestions: { type: Number, required: true },
 
-    // ✅ Store referenced question IDs
+    // ✅ Store referenced question IDs (consistent name used across routes)
     questionIds: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Question" }
     ],
@@ -26,6 +26,11 @@ const QuizSchema = new mongoose.Schema(
 
     // ✅ Store creator name or user reference
     createdBy: { type: String, required: true }, // keeping your format intact
+
+    // ---------- scheduling fields ----------
+    scheduledStart: { type: Date, default: null }, // faculty sets start time
+    scheduledEnd: { type: Date, default: null }, // faculty sets end time
+    // -----------------------------------------
 
     // ---------- certificate fields ----------
     certificateEnabled: { type: Boolean, default: false }, // faculty toggles this

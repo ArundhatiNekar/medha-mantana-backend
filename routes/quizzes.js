@@ -19,6 +19,33 @@ const ALLOWED_CATEGORIES = [
   "general",
 ];
 
+/* ---------------- GET ALL QUIZZES ---------------- */
+router.get("/", async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Fetch all quizzes
+    const quizzes = await Quiz.find().populate("questions");
+
+    // Filter quizzes based on schedule
+    const availableQuizzes = quizzes.filter((quiz) => {
+      if (quiz.isScheduled) {
+        // If scheduled, show only between start and end time
+        return quiz.startTime && quiz.endTime
+          ? now >= new Date(quiz.startTime) && now <= new Date(quiz.endTime)
+          : false;
+      } else {
+        // Not scheduled = always available
+        return true;
+      }
+    });
+
+    res.json(availableQuizzes);
+  } catch (error) {
+    console.error("Error fetching quizzes:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
 /* ---------------- CREATE QUIZ ---------------- */
 router.post("/", async (req, res) => {
   try {
@@ -28,6 +55,8 @@ router.post("/", async (req, res) => {
       count = 10,
       duration = 600,
       createdBy,
+      scheduledStart,
+      scheduledEnd,
       certificateEnabled = false,
       certificateTemplate = "",
       certificatePassingScore = 0,
@@ -45,22 +74,35 @@ router.post("/", async (req, res) => {
         .status(400)
         .json({ error: `Invalid categories: ${invalid.join(", ")}` });
 
-    // Build filter
-    let filter = {};
-    if (!categories.includes("all")) filter.category = { $in: categories };
+    // ✅ Build filter properly
+let filter = {};
+if (categories.includes("all")) {
+  // fetch all questions
+  filter = {};
+} else {
+  // fetch only from selected categories
+  filter.category = { $in: categories };
+}
 
-    // Fetch questions
-    const pool = await Question.find(filter).select("_id").lean();
-    if (!pool || pool.length === 0)
-      return res
-        .status(400)
-        .json({ error: "No questions available for chosen categories" });
+// ✅ Fetch all valid questions
+const pool = await Question.find(filter).select("_id").lean();
+if (!pool || pool.length === 0) {
+  return res
+    .status(400)
+    .json({ error: "No questions available for chosen categories" });
+}
 
-    // Shuffle & select
-    const shuffled = [...pool].sort(() => 0.5 - Math.random());
-    const selectedIds = shuffled
-      .slice(0, Math.min(count, pool.length))
-      .map((q) => q._id);
+// ✅ Correctly calculate number of questions
+const requestedCount = parseInt(count) || 10;
+const actualCount = Math.min(requestedCount, pool.length);
+
+// ✅ Shuffle & pick exactly requestedCount questions
+const shuffled = [...pool].sort(() => 0.5 - Math.random());
+const selectedIds = shuffled.slice(0, actualCount).map((q) => q._id);
+
+// ✅ Debug log
+console.log(`📘 Category: ${categories.join(", ")}`);
+console.log(`📋 Requested: ${requestedCount}, Selected: ${selectedIds.length}`);
 
     // Save quiz
     const quiz = new Quiz({
@@ -70,6 +112,8 @@ router.post("/", async (req, res) => {
       questionIds: selectedIds,
       duration,
       createdBy,
+      scheduledStart: scheduledStart ? new Date(scheduledStart) : null,
+      scheduledEnd: scheduledEnd ? new Date(scheduledEnd) : null,
       certificateEnabled,
       certificateTemplate,
       certificatePassingScore,
@@ -77,7 +121,9 @@ router.post("/", async (req, res) => {
 
     await quiz.save();
 
-    console.log(`✅ Quiz Created: ${quiz.title} (${quiz._id}) with ${selectedIds.length} questions`);
+    console.log(
+      `✅ Quiz Created: ${quiz.title} (${quiz._id}) with ${selectedIds.length} questions`
+    );
 
     res.status(201).json({
       message: "✅ Quiz created successfully",
@@ -100,20 +146,17 @@ router.post("/", async (req, res) => {
   }
 });
 
-/* ---------------- GET ALL QUIZZES ---------------- */
-router.get("/", async (req, res) => {
+/* ---------------- GET QUIZ (POPULATE) ---------------- */
+// ✅ FIX: Avoid duplicate route name conflict (renamed this to /basic/:id)
+router.get("/basic/:id", async (req, res) => {
   try {
-    const quizzes = await Quiz.find()
-      .select(
-        "title numQuestions duration categories createdBy certificateEnabled certificatePassingScore"
-      )
-      .sort({ createdAt: -1 })
-      .lean();
+    const quiz = await Quiz.findById(req.params.id).populate("questionIds");
+    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
 
-    res.json({ quizzes });
+    res.json(quiz);
   } catch (err) {
-    console.error("❌ Error fetching all quizzes:", err);
-    res.status(500).json({ error: "Server error while fetching quizzes" });
+    console.error("Error fetching quiz:", err);
+    res.status(500).json({ error: "Error fetching quiz" });
   }
 });
 
@@ -186,6 +229,20 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Quiz not found" });
     }
 
+    // ✅ Check scheduling constraints: only enforce if both start and end are set
+    const now = new Date();
+    console.log(`🔍 Checking scheduling for quiz ${quiz._id}: now=${now}, scheduledStart=${quiz.scheduledStart}, scheduledEnd=${quiz.scheduledEnd}`);
+    if (quiz.scheduledStart && quiz.scheduledEnd) {
+      if (now < new Date(quiz.scheduledStart)) {
+        console.log(`🚫 Quiz has not started yet`);
+        return res.status(403).json({ error: "Quiz has not started yet" });
+      }
+      if (now > new Date(quiz.scheduledEnd)) {
+        console.log(`🚫 Quiz has ended`);
+        return res.status(403).json({ error: "Quiz has ended" });
+      }
+    }
+
     console.log(`✅ Quiz found: ${quiz.title} (${quiz._id})`);
 
     // ✅ Handle both old & new schema (category vs categories)
@@ -196,9 +253,9 @@ router.get("/:id", async (req, res) => {
       : ["general"];
 
     // ✅ Fetch all questions linked to quiz
-    const questionIds = quiz.questionIds?.map((id) =>
-      new mongoose.Types.ObjectId(id)
-    );
+    const questionIds = (quiz.questionIds || [])
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
 
     console.log("🔍 Fetching questions for quiz:", questionIds);
 
@@ -206,25 +263,36 @@ router.get("/:id", async (req, res) => {
       .select("question options answer explanation category")
       .lean();
 
+    // ✅ FIX: If fewer than expected questions found, log warning
+    if (questions.length < quiz.numQuestions) {
+      console.warn(
+        `⚠️ Expected ${quiz.numQuestions} questions but found only ${questions.length} in DB for quiz ${quiz._id}`
+      );
+    }
+
     if (!questions.length) {
       console.warn(`⚠️ No questions found for quiz ${quiz._id}`);
       return res.status(404).json({ error: "No questions found for this quiz" });
     }
 
-    // ✅ Order & shuffle
+    // ✅ FIX: Preserve question order if faculty uploaded via CSV
     const qById = new Map(questions.map((q) => [String(q._id), q]));
     const orderedQuestions = quiz.questionIds
       .map((id) => qById.get(String(id)))
       .filter(Boolean);
-    const randomizedQuestions = [...orderedQuestions].sort(() => 0.5 - Math.random());
 
-    // ✅ Capitalize categorieshttps://chatgpt.com/c/68f79849-cb68-8322-b921-9a3a1696fc35
+    // ✅ FIX: Ensure we always send correct number of questions
+    const randomizedQuestions = orderedQuestions.concat(questions).slice(0, quiz.numQuestions).sort(() => 0.5 - Math.random());
+
+    // ✅ Capitalize categories
     const displayCategories = categories.map(
       (c) => c.charAt(0).toUpperCase() + c.slice(1)
     );
 
     // ✅ Send final quiz
-    console.log(`🚀 Sending ${randomizedQuestions.length} questions for quiz "${quiz.title}"`);
+    console.log(
+      `🚀 Sending ${randomizedQuestions.length} questions for quiz "${quiz.title}"`
+    );
     res.json({
       quiz: {
         _id: quiz._id,
@@ -234,6 +302,8 @@ router.get("/:id", async (req, res) => {
         duration: quiz.duration,
         createdBy: quiz.createdBy,
         questions: randomizedQuestions,
+        scheduledStart: quiz.scheduledStart,
+        scheduledEnd: quiz.scheduledEnd,
         certificateEnabled: quiz.certificateEnabled || false,
         certificateTemplate: quiz.certificateTemplate || "",
         certificatePassingScore: quiz.certificatePassingScore || 0,

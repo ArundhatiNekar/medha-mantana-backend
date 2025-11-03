@@ -5,10 +5,8 @@ import path from "path";
 import Papa from "papaparse";
 import { stringify } from "csv-stringify";
 import { v4 as uuidv4 } from "uuid";
-
 import Question from "../models/Question.js";
 import CSVUpload from "../models/CSVUpload.js";
-
 import Quiz from "../models/Quiz.js";
 import { Parser } from "json2csv";
 
@@ -33,7 +31,7 @@ router.get("/", async (req, res) => {
   try {
     const { category } = req.query;
     const filter = category && category !== "all" ? { category: category.toLowerCase() } : {};
-    const questions = await Question.find(filter);
+    const questions = await Question.find(filter).sort({ createdAt: -1 });
     res.json(questions);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -45,40 +43,26 @@ router.post("/", async (req, res) => {
   try {
     const { question, options, answer, category, source, explanation } = req.body;
 
-    // ✅ 1️⃣ Validation for basic fields
     if (!question || !answer || !options || !Array.isArray(options) || options.length < 2) {
       return res.status(400).json({ error: "⚠️ Please provide question, at least two options, and the correct answer." });
     }
 
-    // ✅ 2️⃣ Normalize category safely
     const normalizedCategory = category?.toLowerCase().trim() || "general";
 
-    // ✅ 3️⃣ Define allowed categories here (missing in your code earlier)
     const ALLOWED_CATEGORIES = [
       "all",
-      "quantitative",
-      "logical",
-      "verbal",
-      "numerical",
-      "spatial",
-      "mechanical",
-      "technical",
-      "reasoning",
-      "general",
+      ...categories
     ];
 
-    // ✅ 4️⃣ Validate category
     if (!ALLOWED_CATEGORIES.includes(normalizedCategory)) {
       return res.status(400).json({ error: `⚠️ Invalid category: ${normalizedCategory}` });
     }
 
-    // ✅ 5️⃣ Check if the same question already exists
     const exists = await Question.findOne({ question: question.trim() });
     if (exists) {
       return res.status(400).json({ error: "❌ Question already exists" });
     }
 
-    // ✅ 6️⃣ Save the new question
     const newQuestion = new Question({
       question: question.trim(),
       options: options.map((opt) => opt?.trim()).filter(Boolean),
@@ -90,7 +74,6 @@ router.post("/", async (req, res) => {
 
     await newQuestion.save();
 
-    // ✅ 7️⃣ Return success response
     res.status(201).json({
       message: "✅ Question added successfully",
       question: newQuestion,
@@ -169,6 +152,9 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
 
     let inserted = 0, skipped = 0;
 
+    // ✅ FIX: ensure duplicate batch questions don't conflict with previous CSVs
+    await Question.deleteMany({ source: "csv", batchId });
+
     // Save CSV metadata
     const csvFile = await CSVUpload.create({
       filename: req.file.filename,
@@ -235,7 +221,6 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "❌ CSV processing failed: " + err.message });
   } finally {
-    // Ensure file cleanup always happens for temp files
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
     }
@@ -252,20 +237,49 @@ router.get("/csv-files", async (req, res) => {
   }
 });
 
-/* ------------------ DOWNLOAD CSV (by id) ------------------ */
-router.get("/download-csv/:quizId", async (req, res) => {
+/* ------------------ DOWNLOAD CSV (by quizId) ------------------ */
+router.get("/download-csv/quiz/:quizId", async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.quizId).populate("questions");
+    const quiz = await Quiz.findById(req.params.quizId).populate("questionIds");
     if (!quiz) return res.status(404).json({ error: "Quiz not found" });
 
-    // ✅ FIX: field names must match Question schema
+    const questions = (quiz.questionIds || []).map(q => ({
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      category: q.category,
+      explanation: q.explanation || "",
+    }));
+
     const fields = ["question", "options", "answer", "category", "explanation"];
     const parser = new Parser({ fields });
-    const csv = parser.parse(quiz.questions);
+    const csv = parser.parse(questions);
 
     res.header("Content-Type", "text/csv");
-    res.attachment(`${quiz.title}.csv`);
+    res.attachment(`${quiz.title || "quiz"}.csv`);
     res.send(csv);
+  } catch (err) {
+    console.error("Download error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ------------------ DOWNLOAD CSV (by csvFile id) ------------------ */
+router.get("/download-csv/file/:csvFileId", async (req, res) => {
+  try {
+    const file = await CSVUpload.findById(req.params.csvFileId);
+    if (!file) {
+      return res.status(404).json({ error: "CSV file not found" });
+    }
+
+    const filePath = path.join(process.cwd(), "uploads", file.filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found on server" });
+    }
+
+    res.setHeader("Content-Disposition", `attachment; filename="${file.originalname}"`);
+    res.set("Content-Type", "text/csv");
+    res.sendFile(filePath);
   } catch (err) {
     console.error("Download error:", err);
     res.status(500).json({ error: err.message });
@@ -281,6 +295,11 @@ router.delete("/delete-csv/:id", async (req, res) => {
     const result = await Question.deleteMany({
       $or: [{ csvFileId: req.params.id }, { batchId: file.batchId }],
     });
+
+    const filePath = path.join(process.cwd(), "uploads", file.filename);
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch (e) { console.warn("Unable to remove file:", e.message); }
+    }
 
     await file.deleteOne();
 

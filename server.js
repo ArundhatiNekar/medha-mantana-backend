@@ -23,7 +23,7 @@ app.use(
       "https://medha-mantana-frontend.vercel.app",
       "https://medha-mantana.vercel.app",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"], // ✅ Important for protected routes
     credentials: true,
   })
@@ -54,10 +54,14 @@ app.get("/api/admin/test-results-route", (req, res) => {
   res.json({ message: "✅ Admin Results Route is reachable!" });
 });
 
-// ✅ MongoDB Connection
+// ✅ MongoDB Connection with robust options
 mongoose
   .connect(process.env.MONGO_URI, {
     dbName: "aptiquest",
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    family: 4, // Use IPv4, skip trying IPv6
   })
   .then(() => {
     console.log("✅ MongoDB Connected Successfully");
@@ -67,7 +71,18 @@ mongoose
       console.log(`🚀 Server running on port ${PORT}`)
     );
   })
-  .catch((err) => console.error("❌ DB connection error:", err));
+  .catch((err) => {
+    console.error("❌ DB connection error:", err);
+    console.error("❌ Error details:", {
+      name: err.name,
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      syscall: err.syscall,
+      hostname: err.hostname,
+    });
+    process.exit(1); // Exit on connection failure
+  });
 
 // ✅ Optional: Error handling middleware
 app.use((err, req, res, next) => {

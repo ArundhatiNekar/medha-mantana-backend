@@ -37,8 +37,22 @@ router.post("/", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Invalid quiz ID" });
     }
 
+    // ✅ Check if quiz is scheduled and within time window: only enforce if both start and end are set
+    const quizDoc = await Quiz.findById(quiz).select("scheduledStart scheduledEnd");
+    if (quizDoc && quizDoc.scheduledStart && quizDoc.scheduledEnd) {
+      const now = new Date();
+      if (now < quizDoc.scheduledStart) {
+        return res.status(403).json({ error: "Quiz has not started yet" });
+      }
+      if (now > quizDoc.scheduledEnd) {
+        return res.status(403).json({ error: "Quiz has ended" });
+      }
+    }
+
     // ✅ Fetch all related questions from DB
-    const questionDocs = await Question.find({ _id: { $in: Object.keys(answers) } });
+    const questionDocs = await Question.find({
+      _id: { $in: Object.keys(answers) },
+    });
 
     // ✅ Build snapshot answers
     const transformedAnswers = Object.entries(answers).map(([qId, chosen]) => {
@@ -55,6 +69,57 @@ router.post("/", authMiddleware, async (req, res) => {
       };
     });
 
+    // ✅ Ensure safe totals and percentage (robust)
+    let totalQ = totalQuestions;
+
+    // ✅ Fetch from quiz if totalQuestions missing
+    if (!totalQ || isNaN(totalQ) || totalQ <= 0) {
+      try {
+        const quizDoc = await Quiz.findById(quiz).select(
+          "numQuestions questionIds categories"
+        );
+        if (quizDoc) {
+          if (
+            quizDoc.categories?.includes("All") ||
+            quizDoc.categories?.includes("all")
+          ) {
+            // Category 'All' — use actual number of answers as total
+            totalQ = Object.keys(answers || {}).length;
+          } else {
+            totalQ =
+              quizDoc.numQuestions ||
+              (quizDoc.questionIds ? quizDoc.questionIds.length : 0);
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not fetch quiz totalQuestions:", e.message);
+        totalQ = Object.keys(answers || {}).length;
+      }
+    }
+
+    // Fallback if still 0
+    if (!totalQ || totalQ <= 0) {
+      totalQ = Object.keys(answers || {}).length;
+    }
+
+    const correctQ =
+      correctAnswers !== undefined
+        ? correctAnswers
+        : transformedAnswers.filter((a) => a.correct).length;
+
+    const wrongQ =
+      wrongAnswers !== undefined
+        ? wrongAnswers
+        : transformedAnswers.filter((a) => !a.correct).length;
+
+    const computedScore = score !== undefined ? score : correctQ;
+
+    // ✅ Prevent NaN in percentage
+    const percentage =
+      totalQ > 0 && !isNaN(correctQ)
+        ? parseFloat(((correctQ / totalQ) * 100).toFixed(2))
+        : 0;
+
     // ✅ Safely create result (mapped to schema fields)
     const newResult = new Result({
       quiz,
@@ -62,10 +127,11 @@ router.post("/", authMiddleware, async (req, res) => {
       studentName,
       answers: transformedAnswers,
       questionOrder: questionOrder || Object.keys(answers),
-      score: score || 0,
-      totalQuestions: totalQuestions || transformedAnswers.length,
-      correctAnswers: correctAnswers || transformedAnswers.filter((a) => a.correct).length,
-      wrongAnswers: wrongAnswers || transformedAnswers.filter((a) => !a.correct).length,
+      score: computedScore,
+      totalQuestions: totalQ,
+      correctAnswers: correctQ,
+      wrongAnswers: wrongQ,
+      percentage, // ✅ fixed NaN issue
       timeTaken,
       attemptedAt: new Date(),
     });
@@ -98,7 +164,21 @@ router.get("/", async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    res.json({ results });
+    // ✅ Add computed percentage fallback if missing
+    const withPercent = results.map((r) => {
+      const percent =
+        r.totalQuestions > 0
+          ? parseFloat(
+              ((r.correctAnswers / r.totalQuestions) * 100).toFixed(2)
+            )
+          : 0;
+      return {
+        ...r._doc,
+        percentage: !isNaN(r.percentage) ? r.percentage : percent,
+      };
+    });
+
+    res.json({ results: withPercent });
   } catch (err) {
     console.error("❌ Error fetching results:", err);
     res.status(500).json({ error: "Server error" });
@@ -121,7 +201,20 @@ router.get("/quiz/:id", async (req, res) => {
       })
       .sort({ score: -1, attemptedAt: -1 });
 
-    res.json({ results });
+    const withPercent = results.map((r) => {
+      const percent =
+        r.totalQuestions > 0
+          ? parseFloat(
+              ((r.correctAnswers / r.totalQuestions) * 100).toFixed(2)
+            )
+          : 0;
+      return {
+        ...r._doc,
+        percentage: !isNaN(r.percentage) ? r.percentage : percent,
+      };
+    });
+
+    res.json({ results: withPercent });
   } catch (err) {
     console.error("❌ Error fetching quiz results:", err);
     res.status(500).json({ error: "Server error" });
@@ -143,7 +236,20 @@ router.get("/student/:studentName", async (req, res) => {
       return res.json({ results: [] });
     }
 
-    res.json({ results });
+    const withPercent = results.map((r) => {
+      const percent =
+        r.totalQuestions > 0
+          ? parseFloat(
+              ((r.correctAnswers / r.totalQuestions) * 100).toFixed(2)
+            )
+          : 0;
+      return {
+        ...r._doc,
+        percentage: !isNaN(r.percentage) ? r.percentage : percent,
+      };
+    });
+
+    res.json({ results: withPercent });
   } catch (err) {
     console.error("❌ Error fetching student results:", err);
     res.status(500).json({ error: "Server error" });
@@ -166,7 +272,9 @@ router.get("/:id", async (req, res) => {
       });
 
     if (!result) {
-      return res.status(404).json({ error: "No details found for this attempt" });
+      return res
+        .status(404)
+        .json({ error: "No details found for this attempt" });
     }
 
     const questionIds = result.questionOrder || [];
@@ -176,12 +284,20 @@ router.get("/:id", async (req, res) => {
       .map((id) => questions.find((q) => q._id.toString() === id.toString()))
       .filter(Boolean);
 
+    const safePercent =
+      result.totalQuestions > 0
+        ? parseFloat(
+            ((result.correctAnswers / result.totalQuestions) * 100).toFixed(2)
+          )
+        : 0;
+
     const resultWithQuiz = {
       ...result.toObject(),
       quiz: {
         ...result.quiz?.toObject(),
         questions: orderedQuestions,
       },
+      percentage: !isNaN(result.percentage) ? result.percentage : safePercent,
     };
 
     res.json({ result: resultWithQuiz });
