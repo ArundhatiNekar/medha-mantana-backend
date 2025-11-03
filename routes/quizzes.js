@@ -20,30 +20,14 @@ const ALLOWED_CATEGORIES = [
 ];
 
 /* ---------------- GET ALL QUIZZES ---------------- */
+// GET all active quizzes
 router.get("/", async (req, res) => {
   try {
-    const now = new Date();
-
-    // Fetch all quizzes
-    const quizzes = await Quiz.find().populate("questions");
-
-    // Filter quizzes based on schedule
-    const availableQuizzes = quizzes.filter((quiz) => {
-      if (quiz.isScheduled) {
-        // If scheduled, show only between start and end time
-        return quiz.startTime && quiz.endTime
-          ? now >= new Date(quiz.startTime) && now <= new Date(quiz.endTime)
-          : false;
-      } else {
-        // Not scheduled = always available
-        return true;
-      }
-    });
-
-    res.json(availableQuizzes);
+    const quizzes = await Quiz.find().populate("questionIds");
+    res.status(200).json({ quizzes });
   } catch (error) {
-    console.error("Error fetching quizzes:", error);
-    res.status(500).json({ message: error.message });
+    console.error("❌ Error fetching quizzes:", error);
+    res.status(500).json({ message: "Error fetching quizzes" });
   }
 });
 /* ---------------- CREATE QUIZ ---------------- */
@@ -55,8 +39,6 @@ router.post("/", async (req, res) => {
       count = 10,
       duration = 600,
       createdBy,
-      scheduledStart,
-      scheduledEnd,
       certificateEnabled = false,
       certificateTemplate = "",
       certificatePassingScore = 0,
@@ -112,8 +94,6 @@ console.log(`📋 Requested: ${requestedCount}, Selected: ${selectedIds.length}`
       questionIds: selectedIds,
       duration,
       createdBy,
-      scheduledStart: scheduledStart ? new Date(scheduledStart) : null,
-      scheduledEnd: scheduledEnd ? new Date(scheduledEnd) : null,
       certificateEnabled,
       certificateTemplate,
       certificatePassingScore,
@@ -229,19 +209,7 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Quiz not found" });
     }
 
-    // ✅ Check scheduling constraints: only enforce if both start and end are set
-    const now = new Date();
-    console.log(`🔍 Checking scheduling for quiz ${quiz._id}: now=${now}, scheduledStart=${quiz.scheduledStart}, scheduledEnd=${quiz.scheduledEnd}`);
-    if (quiz.scheduledStart && quiz.scheduledEnd) {
-      if (now < new Date(quiz.scheduledStart)) {
-        console.log(`🚫 Quiz has not started yet`);
-        return res.status(403).json({ error: "Quiz has not started yet" });
-      }
-      if (now > new Date(quiz.scheduledEnd)) {
-        console.log(`🚫 Quiz has ended`);
-        return res.status(403).json({ error: "Quiz has ended" });
-      }
-    }
+
 
     console.log(`✅ Quiz found: ${quiz.title} (${quiz._id})`);
 
@@ -302,8 +270,7 @@ router.get("/:id", async (req, res) => {
         duration: quiz.duration,
         createdBy: quiz.createdBy,
         questions: randomizedQuestions,
-        scheduledStart: quiz.scheduledStart,
-        scheduledEnd: quiz.scheduledEnd,
+
         certificateEnabled: quiz.certificateEnabled || false,
         certificateTemplate: quiz.certificateTemplate || "",
         certificatePassingScore: quiz.certificatePassingScore || 0,

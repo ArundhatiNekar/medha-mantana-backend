@@ -37,17 +37,7 @@ router.post("/", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Invalid quiz ID" });
     }
 
-    // ✅ Check if quiz is scheduled and within time window: only enforce if both start and end are set
-    const quizDoc = await Quiz.findById(quiz).select("scheduledStart scheduledEnd");
-    if (quizDoc && quizDoc.scheduledStart && quizDoc.scheduledEnd) {
-      const now = new Date();
-      if (now < quizDoc.scheduledStart) {
-        return res.status(403).json({ error: "Quiz has not started yet" });
-      }
-      if (now > quizDoc.scheduledEnd) {
-        return res.status(403).json({ error: "Quiz has ended" });
-      }
-    }
+
 
     // ✅ Fetch all related questions from DB
     const questionDocs = await Question.find({
