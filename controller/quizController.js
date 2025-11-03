@@ -7,8 +7,12 @@ import Quiz from "../models/Quiz.js";
 export const getAllQuizzes = async (req, res) => {
   try {
     const quizzes = await Quiz.find()
+      // ✅ Fix populate field — use "questionIds" instead of "questions"
+      .populate("questionIds") 
+      // ✅ Only populate user info if createdBy is a reference to User model
       .populate("createdBy", "username email")
       .sort({ createdAt: -1 });
+
     res.status(200).json(quizzes);
   } catch (err) {
     console.error("❌ Error fetching quizzes:", err);
@@ -21,15 +25,21 @@ export const getAllQuizzes = async (req, res) => {
 /* -------------------------------------------------------------------------- */
 export const createQuiz = async (req, res) => {
   try {
-    const { title, description } = req.body;
-    if (!title || !description) {
-      return res.status(400).json({ error: "Title and description are required" });
+    const { title, description, numQuestions, duration, questionIds, categories } = req.body;
+
+    // ✅ Validate essential fields
+    if (!title || !numQuestions || !duration) {
+      return res.status(400).json({ error: "Title, numQuestions, and duration are required." });
     }
 
     const newQuiz = new Quiz({
       title,
-      description,
-      createdBy: req.user._id,
+      description: description || "",
+      numQuestions,
+      duration,
+      questionIds: questionIds || [],
+      categories: categories || ["all"],
+      createdBy: req.user?._id || "admin", // fallback if no auth
     });
 
     await newQuiz.save();
@@ -46,13 +56,9 @@ export const createQuiz = async (req, res) => {
 export const updateQuiz = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const updates = req.body;
 
-    const updatedQuiz = await Quiz.findByIdAndUpdate(
-      id,
-      { title, description },
-      { new: true }
-    );
+    const updatedQuiz = await Quiz.findByIdAndUpdate(id, updates, { new: true });
 
     if (!updatedQuiz) {
       return res.status(404).json({ error: "Quiz not found" });
