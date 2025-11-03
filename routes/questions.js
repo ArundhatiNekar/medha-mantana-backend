@@ -237,36 +237,24 @@ router.get("/csv-files", async (req, res) => {
   }
 });
 
-/* ------------------ DOWNLOAD CSV (by csvFile id) ------------------ */
-// ✅ Download questions as CSV for a given quiz
-router.get("/download-csv/:quizId", async (req, res) => {
+/* ------------------ DOWNLOAD ORIGINAL UPLOADED CSV ------------------ */
+router.get("/download-upload/:csvId", async (req, res) => {
   try {
-    const { quizId } = req.params;
-
-    const quiz = await Quiz.findById(quizId).populate("questionIds");
-    if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
+    const file = await CSVUpload.findById(req.params.csvId);
+    if (!file) {
+      return res.status(404).json({ error: "CSV file not found" });
     }
 
-    const questions = quiz.questionIds;
+    const filePath = path.join(process.cwd(), "uploads", file.filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Uploaded file missing on server" });
+    }
 
-    // Convert questions to CSV
-    const headers = "Question,Option A,Option B,Option C,Option D,Correct Answer\n";
-    const rows = questions
-      .map(
-        (q) =>
-          `"${q.questionText}","${q.options[0]}","${q.options[1]}","${q.options[2]}","${q.options[3]}","${q.correctAnswer}"`
-      )
-      .join("\n");
-
-    const csv = headers + rows;
-
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename=quiz_${quizId}.csv`);
-    res.status(200).send(csv);
+    // Send the original uploaded CSV file for download
+    res.download(filePath, file.originalname);
   } catch (err) {
     console.error("❌ CSV download error:", err);
-    res.status(500).json({ message: "Error generating CSV" });
+    res.status(500).json({ error: "Error downloading uploaded CSV" });
   }
 });
 
