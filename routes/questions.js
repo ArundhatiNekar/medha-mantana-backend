@@ -7,6 +7,7 @@ import { stringify } from "csv-stringify";
 import { v4 as uuidv4 } from "uuid";
 import Question from "../models/Question.js";
 import CSVUpload from "../models/CSVUpload.js";
+import UploadedCSV from "../models/UploadedCSV.js";
 import Quiz from "../models/Quiz.js";
 import { Parser } from "json2csv";
 
@@ -233,22 +234,24 @@ router.get("/csv-files", async (req, res) => {
 router.get("/download-csv/:id", async (req, res) => {
   try {
     const file = await UploadedCSV.findById(req.params.id);
+
     if (!file) {
       return res.status(404).json({ error: "CSV metadata not found" });
     }
 
-    const filePath = path.join(__dirname, "../uploads", file.filename);
+    const filePath = path.join(process.cwd(), "uploads", file.filename);
 
-    // ✅ Check if file actually exists
+    // ✅ Check if file actually exists on the server
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
-        error: "File not found on server. It might have been deleted or lost after deployment.",
+        error: "File not found on server. It might have been deleted after deployment.",
       });
     }
 
+    // ✅ Send file to browser
     res.download(filePath, file.originalname);
   } catch (err) {
-    console.error("Download error:", err);
+    console.error("❌ Error downloading CSV file:", err.message);
     res.status(500).json({ error: "Server error while downloading file" });
   }
 });
