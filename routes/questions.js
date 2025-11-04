@@ -13,7 +13,7 @@ import { Parser } from "json2csv";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-// ✅ Allowed categories (all lowercase, consistent in DB)
+// ✅ Allowed categories (consistent lowercase)
 const categories = [
   "quantitative",
   "logical",
@@ -44,15 +44,11 @@ router.post("/", async (req, res) => {
     const { question, options, answer, category, source, explanation } = req.body;
 
     if (!question || !answer || !options || !Array.isArray(options) || options.length < 2) {
-      return res.status(400).json({ error: "⚠️ Please provide question, at least two options, and the correct answer." });
+      return res.status(400).json({ error: "⚠️ Provide question, at least two options, and the correct answer." });
     }
 
     const normalizedCategory = category?.toLowerCase().trim() || "general";
-
-    const ALLOWED_CATEGORIES = [
-      "all",
-      ...categories
-    ];
+    const ALLOWED_CATEGORIES = ["all", ...categories];
 
     if (!ALLOWED_CATEGORIES.includes(normalizedCategory)) {
       return res.status(400).json({ error: `⚠️ Invalid category: ${normalizedCategory}` });
@@ -73,11 +69,7 @@ router.post("/", async (req, res) => {
     });
 
     await newQuestion.save();
-
-    res.status(201).json({
-      message: "✅ Question added successfully",
-      question: newQuestion,
-    });
+    res.status(201).json({ message: "✅ Question added successfully", question: newQuestion });
   } catch (err) {
     console.error("❌ Error adding question:", err);
     res.status(500).json({ error: "Server error while adding question" });
@@ -136,9 +128,9 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "⚠️ No file uploaded" });
 
   const batchId = uuidv4();
-  let tempFilePath = null;
+  let tempFilePath = req.file.path;
+
   try {
-    tempFilePath = req.file.path;
     const fileData = fs.readFileSync(tempFilePath, "utf8");
 
     const results = await new Promise((resolve, reject) => {
@@ -152,18 +144,14 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
 
     let inserted = 0, skipped = 0;
 
-    // ✅ FIX: ensure duplicate batch questions don't conflict with previous CSVs
-    await Question.deleteMany({ source: "csv", batchId });
-
-    // Save CSV metadata
     const csvFile = await CSVUpload.create({
       filename: req.file.filename,
       originalname: req.file.originalname,
       batchId,
-      uploadedBy: "faculty123", // replace with logged-in user later
+      uploadedBy: "faculty123", // can be changed later to user info
     });
 
-    for (let row of results.data) {
+    for (const row of results.data) {
       if (!row.question || !row.answer) {
         skipped++;
         continue;
@@ -198,27 +186,29 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
         options,
         answer: row.answer.trim(),
         category,
-        source: "csv",
         explanation: row.explanation?.trim() || "",
+        source: "csv",
         batchId,
         csvFileId: csvFile._id,
       });
+
       inserted++;
     }
 
-    // Move file to permanent location
+    // ✅ Move file to permanent location
     const permanentPath = path.join("uploads", req.file.filename);
     fs.renameSync(tempFilePath, permanentPath);
-    tempFilePath = null; // Prevent cleanup
+    tempFilePath = null;
 
     res.json({
-      message: "✅ CSV processed",
+      message: "✅ CSV processed successfully",
       inserted,
       skipped,
       batchId,
       csvFileId: csvFile._id,
     });
   } catch (err) {
+    console.error("❌ CSV processing failed:", err);
     res.status(500).json({ error: "❌ CSV processing failed: " + err.message });
   } finally {
     if (tempFilePath && fs.existsSync(tempFilePath)) {
@@ -227,64 +217,41 @@ router.post("/upload-csv", upload.single("file"), async (req, res) => {
   }
 });
 
-/* ------------------ DOWNLOAD UPLOADED CSV (by fileId) ------------------ */
-router.get("/download-upload/:fileId", async (req, res) => {
+
+/* ------------------ LIST CSV FILES ------------------ */
+router.get("/csv-files", async (req, res) => {
   try {
-    const { fileId } = req.params;
-
-    // Find CSV metadata
-    const csvFile = await CSVUpload.findById(fileId);
-    if (!csvFile) {
-      return res.status(404).json({ error: "CSV file not found" });
-    }
-
-    // Find all questions that came from this CSV file
-    const questions = await Question.find({
-      $or: [{ csvFileId: fileId }, { batchId: csvFile.batchId }],
-    });
-
-    if (!questions.length) {
-      return res.status(404).json({ error: "No questions found for this CSV file" });
-    }
-
-    // Prepare CSV data
-    const fields = [
-      "question",
-      "option1",
-      "option2",
-      "option3",
-      "option4",
-      "answer",
-      "category",
-      "explanation"
-    ];
-
-    // Format questions properly
-    const csvData = questions.map((q) => ({
-      question: q.question,
-      option1: q.options[0] || "",
-      option2: q.options[1] || "",
-      option3: q.options[2] || "",
-      option4: q.options[3] || "",
-      answer: q.answer,
-      category: q.category,
-      explanation: q.explanation || "",
-    }));
-
-    const parser = new Parser({ fields });
-    const csv = parser.parse(csvData);
-
-    // Send CSV file
-    res.header("Content-Type", "text/csv");
-    res.attachment(csvFile.originalname || `uploaded_${fileId}.csv`);
-    res.send(csv);
+    const files = await CSVUpload.find().sort({ createdAt: -1 });
+    res.status(200).json(files || []);
   } catch (err) {
-    console.error("❌ CSV download error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Error fetching CSV files:", err);
+    res.status(500).json({ error: "Error fetching CSV files" });
   }
 });
 
-/* ------------------ DELETE CSV (by id) ------------------ */
+/* ------------------ DOWNLOAD ORIGINAL UPLOADED CSV ------------------ */
+router.get("/download-upload/:csvId", async (req, res) => {
+  try {
+    const file = await CSVUpload.findById(req.params.csvId);
+    if (!file) {
+      return res.status(404).json({ error: "CSV file not found" });
+    }
+
+    const filePath = path.join(process.cwd(), "uploads", file.filename);
+    if (!fs.existsSync(filePath)) {
+      console.error("❌ Missing file:", filePath);
+      return res.status(404).json({ error: "Uploaded file missing on server" });
+    }
+
+    // ✅ Send file for download
+    res.download(filePath, file.originalname);
+  } catch (err) {
+    console.error("❌ CSV download error:", err);
+    res.status(500).json({ error: "Error downloading uploaded CSV" });
+  }
+});
+
+/* ------------------ DELETE CSV FILE & RELATED QUESTIONS ------------------ */
 router.delete("/delete-csv/:id", async (req, res) => {
   try {
     const file = await CSVUpload.findById(req.params.id);
@@ -296,13 +263,17 @@ router.delete("/delete-csv/:id", async (req, res) => {
 
     const filePath = path.join(process.cwd(), "uploads", file.filename);
     if (fs.existsSync(filePath)) {
-      try { fs.unlinkSync(filePath); } catch (e) { console.warn("Unable to remove file:", e.message); }
+      try {
+        fs.unlinkSync(filePath);
+      } catch (e) {
+        console.warn("⚠️ Unable to remove file:", e.message);
+      }
     }
 
     await file.deleteOne();
 
     res.json({
-      message: "✅ CSV file and its questions deleted",
+      message: "✅ CSV file and related questions deleted",
       deleted: result.deletedCount,
     });
   } catch (err) {
@@ -322,5 +293,17 @@ router.get("/sample-csv", (req, res) => {
   res.set("Content-Type", "text/csv");
   csvStream.pipe(res);
 });
+
+/* ------------------ FETCH ALL UPLOADED CSV FILES ------------------ */
+router.get("/uploaded-csvs", async (req, res) => {
+  try {
+    const files = await CSVUpload.find().sort({ createdAt: -1 });
+    res.json(files);
+  } catch (err) {
+    console.error("❌ Error fetching uploaded CSVs:", err);
+    res.status(500).json({ error: "Failed to fetch uploaded CSVs" });
+  }
+});
+
 
 export default router;
