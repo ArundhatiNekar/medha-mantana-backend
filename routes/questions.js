@@ -230,24 +230,26 @@ router.get("/csv-files", async (req, res) => {
 });
 
 /* ------------------ DOWNLOAD ORIGINAL UPLOADED CSV ------------------ */
-router.get("/download-upload/:csvId", async (req, res) => {
+router.get("/download-csv/:id", async (req, res) => {
   try {
-    const file = await CSVUpload.findById(req.params.csvId);
+    const file = await UploadedCSV.findById(req.params.id);
     if (!file) {
-      return res.status(404).json({ error: "CSV file not found" });
+      return res.status(404).json({ error: "CSV metadata not found" });
     }
 
-    const filePath = path.join(process.cwd(), "uploads", file.filename);
+    const filePath = path.join(__dirname, "../uploads", file.filename);
+
+    // ✅ Check if file actually exists
     if (!fs.existsSync(filePath)) {
-      console.error("❌ Missing file:", filePath);
-      return res.status(404).json({ error: "Uploaded file missing on server" });
+      return res.status(404).json({
+        error: "File not found on server. It might have been deleted or lost after deployment.",
+      });
     }
 
-    // ✅ Send file for download
     res.download(filePath, file.originalname);
   } catch (err) {
-    console.error("❌ CSV download error:", err);
-    res.status(500).json({ error: "Error downloading uploaded CSV" });
+    console.error("Download error:", err);
+    res.status(500).json({ error: "Server error while downloading file" });
   }
 });
 
